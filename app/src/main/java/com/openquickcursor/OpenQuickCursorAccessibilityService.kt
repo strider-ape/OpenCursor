@@ -132,10 +132,9 @@ class OpenQuickCursorAccessibilityService : AccessibilityService() {
 
     private fun createEdgeView(side: String): View {
         return object : View(this) {
-            private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.TRANSPARENT
-                style = Paint.Style.FILL
-            }
+            private var hasTriggered = false
+            private var swipeStartX = 0f
+            private var swipeStartY = 0f
 
             override fun onDraw(canvas: Canvas) {
                 canvas.drawColor(Color.TRANSPARENT)
@@ -146,22 +145,48 @@ class OpenQuickCursorAccessibilityService : AccessibilityService() {
                     MotionEvent.ACTION_DOWN -> {
                         downX = event.rawX
                         downY = event.rawY
+                        swipeStartX = event.rawX
+                        swipeStartY = event.rawY
+                        hasTriggered = false
                         return true
                     }
                     MotionEvent.ACTION_MOVE -> {
-                        val deltaX = event.rawX - downX
-                        val isSwipeIn = if (side == "left") {
-                            deltaX > dpToPx(30)
+                        if (!hasTriggered) {
+                            val deltaX = event.rawX - downX
+                            val isSwipeIn = if (side == "left") {
+                                deltaX > dpToPx(30)
+                            } else {
+                                deltaX < -dpToPx(30)
+                            }
+                            if (isSwipeIn) {
+                                hasTriggered = true
+                                showOverlaysAt(event.rawX, event.rawY)
+                                lastTouchX = event.rawX
+                                lastTouchY = event.rawY
+                                cancelAutoVanish()
+                                return true
+                            }
                         } else {
-                            deltaX < -dpToPx(30)
-                        }
-                        if (isSwipeIn) {
-                            showOverlaysAt(event.rawX, event.rawY)
-                            return true
+                            val deltaX = (event.rawX - lastTouchX) * sensitivityMultiplier
+                            val deltaY = (event.rawY - lastTouchY) * sensitivityMultiplier
+                            lastTouchX = event.rawX
+                            lastTouchY = event.rawY
+                            moveCursor(deltaX, deltaY)
+                            resetAutoVanish()
                         }
                         return true
                     }
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        if (hasTriggered) {
+                            val totalTime = event.eventTime - downTime
+                            val totalDistanceX = Math.abs(event.rawX - swipeStartX)
+                            val totalDistanceY = Math.abs(event.rawY - swipeStartY)
+                            if (totalTime < 300 && totalDistanceX < 15 && totalDistanceY < 15) {
+                                simulateTap()
+                            }
+                            hasTriggered = false
+                            startAutoVanish()
+                        }
                         return true
                     }
                 }
