@@ -133,25 +133,12 @@ class OpenQuickCursorAccessibilityService : AccessibilityService() {
     private fun createEdgeView(side: String): View {
         return object : View(this) {
             private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.argb(80, 255, 255, 0)
+                color = Color.TRANSPARENT
                 style = Paint.Style.FILL
-            }
-            private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.argb(120, 255, 200, 0)
-                style = Paint.Style.STROKE
-                strokeWidth = 2f
             }
 
             override fun onDraw(canvas: Canvas) {
-                val cornerRadius = 12f
-                canvas.drawRoundRect(
-                    0f, 0f, width.toFloat(), height.toFloat(),
-                    cornerRadius, cornerRadius, paint
-                )
-                canvas.drawRoundRect(
-                    0f, 0f, width.toFloat(), height.toFloat(),
-                    cornerRadius, cornerRadius, borderPaint
-                )
+                canvas.drawColor(Color.TRANSPARENT)
             }
 
             override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -169,7 +156,7 @@ class OpenQuickCursorAccessibilityService : AccessibilityService() {
                             deltaX < -dpToPx(30)
                         }
                         if (isSwipeIn) {
-                            showOverlays()
+                            showOverlaysAt(event.rawX, event.rawY)
                             return true
                         }
                         return true
@@ -192,17 +179,17 @@ class OpenQuickCursorAccessibilityService : AccessibilityService() {
     private fun createTrackpadView(size: Int): View {
         return object : View(this) {
             private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.argb(120, 50, 100, 200)
+                color = Color.argb(90, 70, 130, 230)
                 style = Paint.Style.FILL
             }
             private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.argb(180, 50, 100, 200)
+                color = Color.argb(140, 100, 160, 255)
                 style = Paint.Style.STROKE
-                strokeWidth = 3f
+                strokeWidth = 2f
             }
 
             override fun onDraw(canvas: Canvas) {
-                val cornerRadius = 24f
+                val cornerRadius = 32f
                 canvas.drawRoundRect(
                     0f, 0f, width.toFloat(), height.toFloat(),
                     cornerRadius, cornerRadius, paint
@@ -279,6 +266,24 @@ class OpenQuickCursorAccessibilityService : AccessibilityService() {
             layoutParams = FrameLayout.LayoutParams(size, size)
             setWillNotDraw(false)
         }
+    }
+
+    private fun showOverlaysAt(rawX: Float, rawY: Float) {
+        if (isOverlaysVisible) return
+        isOverlaysVisible = true
+
+        val wm = windowManager ?: return
+        val trackpadParams = trackpadView?.layoutParams as? WindowManager.LayoutParams ?: return
+        val trackpadSize = trackpadParams.width
+
+        trackpadParams.gravity = Gravity.TOP or Gravity.START
+        trackpadParams.x = (rawX - trackpadSize / 2).toInt()
+        trackpadParams.y = (rawY - trackpadSize / 2).toInt()
+        wm.updateViewLayout(trackpadView, trackpadParams)
+
+        trackpadView?.visibility = View.VISIBLE
+        cursorView?.visibility = View.VISIBLE
+        startAutoVanish()
     }
 
     private fun showOverlays() {
