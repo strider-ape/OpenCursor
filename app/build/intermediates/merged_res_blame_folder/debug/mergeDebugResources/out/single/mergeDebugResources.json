@@ -1,0 +1,6 @@
+[
+    {
+        "merged": "com.openquickcursor.app-debug-8:/xml_accessibility_service_config.xml.flat",
+        "source": "com.openquickcursor.app-main-10:/xml/accessibility_service_config.xml"
+    }
+]

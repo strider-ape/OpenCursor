@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenQuickCursor</string>
+    <string name="accessibility_service_description">OpenQuickCursor creates a virtual trackpad at the bottom of the screen. Drag on the trackpad to move a cursor in the top half. Tap the trackpad to click at the cursor location.</string>
+</resources>
