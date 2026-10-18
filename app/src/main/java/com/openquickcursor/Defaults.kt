@@ -47,6 +47,16 @@ object Defaults {
     const val FLING_VELOCITY_DP_PER_S = 2500f
     const val HIDE_TIMEOUT_MS = 2000L
 
+    // Tracker actions pie (§9, §10)
+    const val PIE_INSIDE_DP = 70f
+    const val PIE_OUTSIDE_DP = 160f
+    const val PIE_INSIDE_COLOR = 0xE61D2935.toInt()
+    const val PIE_OUTSIDE_COLOR = 0xE62B3D4F.toInt()
+    val PIE_ACTIONS = listOf(
+        Action.SWIPE_DOWN, Action.LONG_TAP, Action.SWIPE_LEFT, Action.BACK,
+        Action.SWIPE_UP, Action.SCREENSHOT, Action.SWIPE_RIGHT, Action.QUICK_SETTINGS,
+    )
+
     // Gestures (§8)
     const val TAP_DURATION_MS = 5L
     const val LONG_TAP_TIMEOUT_FACTOR = 1.5f

@@ -58,6 +58,14 @@ class Settings(val prefs: SharedPreferences) {
     var hideOnOutsideTouch by bool("hideOnOutsideTouch", true)
     var doubleTapAction by action("doubleTapAction", Defaults.DOUBLE_TAP_ACTION)
 
+    // Tracker actions pie
+    var longTapOpensPie by bool("longTapOpensPie", false)
+    var pieActions: List<Action>
+        get() = prefs.getString("pieActions", null)
+            ?.split(',')?.mapNotNull { n -> Action.entries.firstOrNull { it.name == n } }
+            ?.takeIf { it.isNotEmpty() } ?: Defaults.PIE_ACTIONS
+        set(value) = prefs.edit().putString("pieActions", value.joinToString(",") { it.name }).apply()
+
     // Edge actions
     var edgeActionsEnabled by bool("edgeActionsEnabled", true)
     var edgeThresholdDp by float("edgeThresholdDp", Defaults.EDGE_THRESHOLD_DP)

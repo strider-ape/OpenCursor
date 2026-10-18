@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.view.WindowManager
+import com.openquickcursor.Defaults
 import com.openquickcursor.actions.Action
 import com.openquickcursor.feedback.Haptics
 import com.openquickcursor.inject.GestureInjector
@@ -16,6 +17,7 @@ import com.openquickcursor.input.EdgeActionResolver
 import com.openquickcursor.input.TriggerLayout
 import com.openquickcursor.overlay.CanvasView
 import com.openquickcursor.overlay.Overlays
+import com.openquickcursor.overlay.PieMenu
 import com.openquickcursor.overlay.TrackerView
 import com.openquickcursor.overlay.TriggerZoneView
 import com.openquickcursor.settings.Settings
@@ -185,7 +187,11 @@ class CursorEngine(private val service: AccessibilityService) :
     private fun fireEdgeAction() {
         val hit = armedEdge ?: return
         endSession()
-        hit.action.perform(service)
+        val c = mapper?.cursor
+        val x = c?.x ?: -1f
+        val y = c?.y ?: -1f
+        endSession()
+        hit.action.perform(service, x, y)
     }
 
     /** Finger lifted after dragging: run a highlighted edge action, otherwise start the idle timer. */
@@ -202,6 +208,7 @@ class CursorEngine(private val service: AccessibilityService) :
         tracker = null
         trackerParams = null
         mapper = null
+        canvas?.pie = null
         canvas?.hideCursor()
     }
 
@@ -261,14 +268,57 @@ class CursorEngine(private val service: AccessibilityService) :
 
     override fun onTrackerTap() = actAtCursor(longTap = false)
 
-    override fun onTrackerLongTap() = actAtCursor(longTap = true)
+    override fun onTrackerLongTap() {
+        if (settings.longTapOpensPie) openPie() else actAtCursor(longTap = true)
+    }
+
+    // --- Tracker actions pie
+
+    private fun openPie() {
+        val view = tracker ?: return
+        view.pieMode = true
+        canvas?.pie = PieMenu(
+            view.centerX,
+            view.centerY,
+            settings.pieActions,
+            Overlays.dp(service, Defaults.PIE_INSIDE_DP) / 2f,
+            Overlays.dp(service, Defaults.PIE_OUTSIDE_DP) / 2f,
+        )
+        vibrate()
+    }
+
+    override fun onPieDrag(x: Float, y: Float) {
+        val pie = canvas?.pie ?: return
+        if (pie.track(x, y)) {
+            canvas?.invalidate()
+            if (pie.selected >= 0) vibrate()
+        }
+    }
+
+    override fun onPieRelease() {
+        val action = canvas?.pie?.selectedAction()
+        canvas?.pie = null
+        if (action != null && action != Action.NOTHING) runAtCursor(action) else scheduleHide()
+    }
+
+    /** Runs any action at the cursor, keeping the tracker out of the way of its gesture. */
+    private fun runAtCursor(action: Action) {
+        val c = mapper?.cursor ?: return
+        injecting = true
+        setTrackerTouchable(false)
+        action.perform(service, c.x, c.y)
+        handler.postDelayed({
+            setTrackerTouchable(true)
+            injecting = false
+            scheduleHide()
+        }, GESTURE_SETTLE_MS)
+    }
 
     override fun onTrackerTouchStart() = handler.removeCallbacks(hideRunnable)
 
     override fun onTrackerDoubleTap() {
         vibrate()
-        settings.doubleTapAction.perform(service)
-        scheduleHide()
+        runAtCursor(settings.doubleTapAction)
     }
 
     override fun onTrackerTouchEnd(flung: Boolean) {
@@ -281,5 +331,8 @@ class CursorEngine(private val service: AccessibilityService) :
 
     private companion object {
         const val SETTINGS_SETTLE_MS = 150L
+
+        /** Long enough for the slowest injected gesture (a 500 ms pinch). */
+        const val GESTURE_SETTLE_MS = 600L
     }
 }

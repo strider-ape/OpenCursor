@@ -56,6 +56,24 @@ class CanvasView(context: Context) : View(context) {
     private val labelInset = Overlays.dp(context, 28f)
     private var edgeHit: EdgeActionResolver.Hit? = null
 
+    /** Open tracker actions pie, drawn above the cursor; null when closed. */
+    var pie: PieMenu? = null
+        set(value) {
+            field = value
+            invalidate()
+        }
+    private val piePaints = PieMenu.Paints(
+        outer = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Defaults.PIE_OUTSIDE_COLOR },
+        inner = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Defaults.PIE_INSIDE_COLOR },
+        selected = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Defaults.EDGE_COLOR; alpha = 170 },
+        label = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFFFFFFF.toInt()
+            textSize = Overlays.dp(context, 13f)
+            textAlign = Paint.Align.CENTER
+            isFakeBoldText = true
+        },
+    )
+
     /** Display size in pixels, kept current by the engine. */
     var screenWidth = 0
     var screenHeight = 0
@@ -127,6 +145,7 @@ class CanvasView(context: Context) : View(context) {
         canvas.drawCircle(cx, cy, cursorSizePx / 2f, fill)
         canvas.drawCircle(cx, cy, cursorSizePx / 2f, stroke)
         canvas.drawCircle(cx, cy, dotRadius, dot)
+        pie?.draw(canvas, ox, oy, piePaints)
     }
 
     private fun drawEdge(canvas: Canvas, hit: EdgeActionResolver.Hit, ox: Float, oy: Float) {

@@ -34,7 +34,14 @@ class TrackerView(
         /** Finger lifted; [flung] is true when it left the pad fast enough to count as a fling. */
         fun onTrackerTouchEnd(flung: Boolean)
         fun onTouchOutside()
+
+        /** While the pie is open, finger moves pick a slice and lifting runs it. */
+        fun onPieDrag(x: Float, y: Float)
+        fun onPieRelease()
     }
+
+    /** Set by the engine while the actions pie is open. */
+    var pieMode = false
 
     /** Hold time before a press counts as a long tap. */
     var longTapMs = Defaults.LONG_TAP_THRESHOLD_MS
@@ -108,6 +115,10 @@ class TrackerView(
                 handler.postDelayed(longTapRunnable, longTapMs)
             }
             MotionEvent.ACTION_MOVE -> {
+                if (pieMode) {
+                    listener.onPieDrag(x, y)
+                    return true
+                }
                 velocity?.addMovement(event)
                 if (!moved && hypot(x - downX, y - downY) > clickDistance) {
                     moved = true
@@ -118,6 +129,11 @@ class TrackerView(
             }
             MotionEvent.ACTION_UP -> {
                 handler.removeCallbacks(longTapRunnable)
+                if (pieMode) {
+                    pieMode = false
+                    listener.onPieRelease()
+                    return true
+                }
                 if (!moved && !longTapped) onTapUp()
                 listener.onTrackerTouchEnd(moved && isFling(event))
                 velocity?.recycle()
