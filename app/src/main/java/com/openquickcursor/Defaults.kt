@@ -33,6 +33,9 @@ object Defaults {
     const val TAP_DURATION_MS = 5L
     const val LONG_TAP_TIMEOUT_FACTOR = 1.5f
 
+    // Haptics (§10)
+    const val VIBRATION_MS = 10L
+
     // Click feedback (§10)
     const val RIPPLE_SIZE_DP = 80f
     const val RIPPLE_DURATION_MS = 500L
