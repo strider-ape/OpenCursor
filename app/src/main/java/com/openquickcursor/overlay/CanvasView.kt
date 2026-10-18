@@ -15,7 +15,12 @@ import com.openquickcursor.input.EdgeActionResolver
  */
 class CanvasView(context: Context) : View(context) {
 
-    private val cursorRadius = Overlays.dp(context, Defaults.CURSOR_SIZE_DP) / 2f
+    /** Cursor diameter in pixels, kept current by the engine. */
+    var cursorSizePx = Overlays.dp(context, Defaults.CURSOR_SIZE_DP)
+        set(value) {
+            field = value
+            invalidate()
+        }
     private val dotRadius = Overlays.dp(context, Defaults.CURSOR_TIP_DP) / 2f
     private val rippleMaxRadius = Overlays.dp(context, Defaults.RIPPLE_SIZE_DP) / 2f
 
@@ -119,8 +124,8 @@ class CanvasView(context: Context) : View(context) {
         if (!cursorVisible) return
         val cx = cursorX - ox
         val cy = cursorY - oy
-        canvas.drawCircle(cx, cy, cursorRadius, fill)
-        canvas.drawCircle(cx, cy, cursorRadius, stroke)
+        canvas.drawCircle(cx, cy, cursorSizePx / 2f, fill)
+        canvas.drawCircle(cx, cy, cursorSizePx / 2f, stroke)
         canvas.drawCircle(cx, cy, dotRadius, dot)
     }
 

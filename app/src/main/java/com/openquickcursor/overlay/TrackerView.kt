@@ -36,6 +36,9 @@ class TrackerView(
         fun onTouchOutside()
     }
 
+    /** Hold time before a press counts as a long tap. */
+    var longTapMs = Defaults.LONG_TAP_THRESHOLD_MS
+
     /** When false, taps fire at once; when true, a tap waits briefly for a second one. */
     var doubleTapEnabled = false
 
@@ -102,7 +105,7 @@ class TrackerView(
                 velocity?.recycle()
                 velocity = VelocityTracker.obtain().also { it.addMovement(event) }
                 listener.onTrackerTouchStart()
-                handler.postDelayed(longTapRunnable, Defaults.LONG_TAP_THRESHOLD_MS)
+                handler.postDelayed(longTapRunnable, longTapMs)
             }
             MotionEvent.ACTION_MOVE -> {
                 velocity?.addMovement(event)

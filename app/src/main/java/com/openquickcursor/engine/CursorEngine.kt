@@ -1,13 +1,13 @@
 package com.openquickcursor.engine
 
 import android.accessibilityservice.AccessibilityService
+import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.graphics.Point
 import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.view.WindowManager
-import com.openquickcursor.Defaults
 import com.openquickcursor.actions.Action
 import com.openquickcursor.feedback.Haptics
 import com.openquickcursor.inject.GestureInjector
@@ -17,6 +17,7 @@ import com.openquickcursor.overlay.CanvasView
 import com.openquickcursor.overlay.Overlays
 import com.openquickcursor.overlay.TrackerView
 import com.openquickcursor.overlay.TriggerZoneView
+import com.openquickcursor.settings.Settings
 
 /**
  * Owns the overlays and runs a cursor session:
@@ -30,7 +31,8 @@ class CursorEngine(private val service: AccessibilityService) :
     private val handler = Handler(Looper.getMainLooper())
     private val injector = GestureInjector(service)
 
-    private val trackerSize = Overlays.dp(service, Defaults.TRACKER_SIZE_DP).toInt()
+    private val settings = Settings(service)
+    private var trackerSize = 0
 
     private var canvas: CanvasView? = null
     private val triggers = mutableListOf<TriggerZoneView>()
@@ -50,12 +52,26 @@ class CursorEngine(private val service: AccessibilityService) :
     private val hideRunnable = Runnable { endSession() }
     private val fireEdgeRunnable = Runnable { fireEdgeAction() }
 
+    /** Held as a field: SharedPreferences only keeps weak references to listeners. */
+    private val settingsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+        handler.post { if (canvas != null) applySettings() }
+    }
+
     fun start() {
         CanvasView(service).also {
             wm.addView(it, Overlays.canvasParams())
             canvas = it
         }
+        applySettings()
+        settings.prefs.registerOnSharedPreferenceChangeListener(settingsListener)
+    }
+
+    /** Rebuilds everything that depends on settings or screen size. */
+    private fun applySettings() {
+        endSession()
+        removeTriggers()
         updateScreen()
+        canvas?.cursorSizePx = Overlays.dp(service, settings.cursorSizeDp)
         addTriggers()
     }
 
@@ -63,15 +79,15 @@ class CursorEngine(private val service: AccessibilityService) :
         screen = Overlays.screenSize(service)
         canvas?.screenWidth = screen.x
         canvas?.screenHeight = screen.y
-        edgeResolver = EdgeActionResolver(
-            Defaults.EDGE_BINDINGS,
-            Overlays.dp(service, Defaults.EDGE_THRESHOLD_DP),
-            screen.x,
-            screen.y,
-        )
+        edgeResolver = if (settings.edgeActionsEnabled) {
+            EdgeActionResolver(settings.edgeBindings(), Overlays.dp(service, settings.edgeThresholdDp), screen.x, screen.y)
+        } else {
+            null
+        }
     }
 
     fun stop() {
+        settings.prefs.unregisterOnSharedPreferenceChangeListener(settingsListener)
         endSession()
         removeTriggers()
         removeView(canvas)
@@ -79,19 +95,18 @@ class CursorEngine(private val service: AccessibilityService) :
     }
 
     /** Rotation or display size changed: rebuild the edge triggers for the new screen. */
-    fun onScreenChanged() {
-        endSession()
-        removeTriggers()
-        updateScreen()
-        addTriggers()
-    }
+    fun onScreenChanged() = applySettings()
 
-    /** One invisible strip on each side edge (SPEC.md §5 default layout). */
+    /** An invisible strip on each enabled side edge (SPEC.md §5 default layout). */
     private fun addTriggers() {
-        val width = Overlays.dp(service, Defaults.TRIGGER_WIDTH_DP).toInt()
-        val height = (screen.y * Defaults.TRIGGER_HEIGHT_FRACTION).toInt()
-        val y = (screen.y * Defaults.TRIGGER_CENTER_Y_FRACTION - height / 2f).toInt()
-        for (side in TriggerZoneView.Side.entries) {
+        val width = Overlays.dp(service, settings.triggerWidthDp).toInt()
+        val height = screen.y * settings.triggerHeightPercent / 100
+        val y = (screen.y * settings.triggerCenterPercent / 100 - height / 2).coerceIn(0, screen.y - height)
+        val sides = buildList {
+            if (settings.leftTrigger) add(TriggerZoneView.Side.LEFT)
+            if (settings.rightTrigger) add(TriggerZoneView.Side.RIGHT)
+        }
+        for (side in sides) {
             val x = if (side == TriggerZoneView.Side.LEFT) 0 else screen.x - width
             TriggerZoneView(service, side, this).also {
                 wm.addView(it, Overlays.triggerParams(width, height, x, y))
@@ -110,19 +125,20 @@ class CursorEngine(private val service: AccessibilityService) :
     private fun startSession(side: TriggerZoneView.Side, x: Float, y: Float) {
         handler.removeCallbacks(hideRunnable)
         val portrait = service.resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE
-        val level = if (portrait) Defaults.PORTRAIT_SPEED_LEVEL else Defaults.LANDSCAPE_SPEED_LEVEL
         mapper = CursorMapper.forEdgeSession(
             fingerX = x,
             fingerY = y,
             fromRight = side == TriggerZoneView.Side.RIGHT,
-            speed = Defaults.SPEED_FACTORS[level],
+            speed = settings.speedFactor(portrait),
             screenWidth = screen.x,
             screenHeight = screen.y,
         )
         if (tracker == null) {
+            trackerSize = Overlays.dp(service, settings.trackerSizeDp).toInt()
             val params = Overlays.trackerParams(trackerSize)
             TrackerView(service, this).also {
-                it.doubleTapEnabled = Defaults.DOUBLE_TAP_ACTION != Action.NOTHING
+                it.doubleTapEnabled = settings.doubleTapAction != Action.NOTHING
+                it.longTapMs = settings.longTapMs.toLong()
                 wm.addView(it, params)
                 tracker = it
                 trackerParams = params
@@ -154,8 +170,8 @@ class CursorEngine(private val service: AccessibilityService) :
         armedEdge = hit
         canvas?.showEdge(hit)
         if (hit != null) {
-            haptics.tick()
-            handler.postDelayed(fireEdgeRunnable, Defaults.EDGE_DELAY_MS)
+            vibrate()
+            handler.postDelayed(fireEdgeRunnable, settings.edgeDelayMs.toLong())
         }
     }
 
@@ -184,7 +200,7 @@ class CursorEngine(private val service: AccessibilityService) :
 
     private fun scheduleHide() {
         handler.removeCallbacks(hideRunnable)
-        handler.postDelayed(hideRunnable, Defaults.HIDE_TIMEOUT_MS)
+        handler.postDelayed(hideRunnable, settings.hideTimeoutMs.toLong())
     }
 
     /** Injects a gesture at the cursor with the tracker made untouchable so it can't catch it. */
@@ -194,7 +210,7 @@ class CursorEngine(private val service: AccessibilityService) :
         val y = cursor.y
         injecting = true
         setTrackerTouchable(false)
-        canvas?.playRipple(x, y)
+        if (settings.rippleOnClick) canvas?.playRipple(x, y)
         val done = {
             setTrackerTouchable(true)
             handler.postDelayed({ injecting = false }, 50)
@@ -212,6 +228,10 @@ class CursorEngine(private val service: AccessibilityService) :
             params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
         }
         wm.updateViewLayout(view, params)
+    }
+
+    private fun vibrate() {
+        if (settings.vibrateOnCursorAction) haptics.tick()
     }
 
     private fun removeView(view: View?) {
@@ -237,16 +257,16 @@ class CursorEngine(private val service: AccessibilityService) :
     override fun onTrackerTouchStart() = handler.removeCallbacks(hideRunnable)
 
     override fun onTrackerDoubleTap() {
-        haptics.tick()
-        Defaults.DOUBLE_TAP_ACTION.perform(service)
+        vibrate()
+        settings.doubleTapAction.perform(service)
         scheduleHide()
     }
 
     override fun onTrackerTouchEnd(flung: Boolean) {
-        if (flung && armedEdge == null && Defaults.HIDE_ON_FLING) endSession() else onDragFinished()
+        if (flung && armedEdge == null && settings.hideOnFling) endSession() else onDragFinished()
     }
 
     override fun onTouchOutside() {
-        if (!injecting) endSession()
+        if (!injecting && settings.hideOnOutsideTouch) endSession()
     }
 }
