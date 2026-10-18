@@ -1,50 +1,56 @@
 package com.openquickcursor
 
-import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
-import android.view.Gravity
+import android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS
 import android.view.accessibility.AccessibilityManager
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.TextView
-import com.openquickcursor.overlay.Overlays
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalContext
 import com.openquickcursor.service.CursorService
+import com.openquickcursor.settings.Settings
+import com.openquickcursor.ui.SettingsScreen
 
-/** Minimal home screen: explains the gesture and links to the accessibility switch. */
-class MainActivity : Activity() {
+/** Home screen: shows whether the service is on and edits the saved settings. */
+class MainActivity : ComponentActivity() {
 
-    private lateinit var status: TextView
+    private val serviceEnabled = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val pad = Overlays.dp(this, 24f).toInt()
-        status = TextView(this).apply { textSize = 16f }
-        setContentView(LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(pad, pad * 2, pad, pad)
-            addView(TextView(context).apply {
-                setText(R.string.main_title)
-                textSize = 24f
-            })
-            addView(TextView(context).apply {
-                setText(R.string.main_how_to)
-                textSize = 16f
-                setPadding(0, pad, 0, pad)
-            })
-            addView(status)
-            addView(Button(context).apply {
-                setText(R.string.main_open_settings)
-                setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
-            })
-        })
+        enableEdgeToEdge()
+        val settings = Settings(this)
+        setContent {
+            val dark = isSystemInDarkTheme()
+            val context = LocalContext.current
+            val colors = when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+                    if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+                dark -> darkColorScheme()
+                else -> lightColorScheme()
+            }
+            MaterialTheme(colorScheme = colors) {
+                SettingsScreen(
+                    settings = settings,
+                    serviceEnabled = serviceEnabled.value,
+                    onOpenAccessibility = { startActivity(Intent(ACTION_ACCESSIBILITY_SETTINGS)) },
+                )
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        status.setText(if (isServiceEnabled()) R.string.main_status_on else R.string.main_status_off)
+        serviceEnabled.value = isServiceEnabled()
     }
 
     private fun isServiceEnabled(): Boolean {
