@@ -8,6 +8,7 @@ import android.os.Looper
 import android.view.View
 import android.view.WindowManager
 import com.openquickcursor.Defaults
+import com.openquickcursor.actions.Action
 import com.openquickcursor.feedback.Haptics
 import com.openquickcursor.inject.GestureInjector
 import com.openquickcursor.input.CursorMapper
@@ -121,6 +122,7 @@ class CursorEngine(private val service: AccessibilityService) :
         if (tracker == null) {
             val params = Overlays.trackerParams(trackerSize)
             TrackerView(service, this).also {
+                it.doubleTapEnabled = Defaults.DOUBLE_TAP_ACTION != Action.NOTHING
                 wm.addView(it, params)
                 tracker = it
                 trackerParams = params
@@ -234,7 +236,15 @@ class CursorEngine(private val service: AccessibilityService) :
 
     override fun onTrackerTouchStart() = handler.removeCallbacks(hideRunnable)
 
-    override fun onTrackerTouchEnd() = onDragFinished()
+    override fun onTrackerDoubleTap() {
+        haptics.tick()
+        Defaults.DOUBLE_TAP_ACTION.perform(service)
+        scheduleHide()
+    }
+
+    override fun onTrackerTouchEnd(flung: Boolean) {
+        if (flung && armedEdge == null && Defaults.HIDE_ON_FLING) endSession() else onDragFinished()
+    }
 
     override fun onTouchOutside() {
         if (!injecting) endSession()

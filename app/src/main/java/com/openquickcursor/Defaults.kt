@@ -30,6 +30,12 @@ object Defaults {
     const val TRACKER_OUTSIDE_COLOR = 0x80C0C0C0.toInt()
     const val CLICK_DISTANCE_DP = 6f
     const val LONG_TAP_THRESHOLD_MS = 400L
+    const val DOUBLE_TAP_THRESHOLD_MS = 200L
+    val DOUBLE_TAP_ACTION = Action.NOTHING
+    const val HIDE_ON_FLING = true
+
+    /** Our own choice; the original's fling threshold wasn't recovered. */
+    const val FLING_VELOCITY_DP_PER_S = 2500f
     const val HIDE_TIMEOUT_MS = 2000L
 
     // Gestures (§8)
