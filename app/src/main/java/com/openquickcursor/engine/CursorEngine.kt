@@ -56,8 +56,11 @@ class CursorEngine(private val service: AccessibilityService) :
 
     /** Held as a field: SharedPreferences only keeps weak references to listeners. */
     private val settingsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
-        handler.post { if (canvas != null) applySettings() }
+        // An import writes dozens of values at once; rebuild once after they settle.
+        handler.removeCallbacks(applySettingsRunnable)
+        handler.postDelayed(applySettingsRunnable, SETTINGS_SETTLE_MS)
     }
+    private val applySettingsRunnable = Runnable { if (canvas != null) applySettings() }
 
     fun start() {
         CanvasView(service).also {
@@ -90,6 +93,7 @@ class CursorEngine(private val service: AccessibilityService) :
 
     fun stop() {
         settings.prefs.unregisterOnSharedPreferenceChangeListener(settingsListener)
+        handler.removeCallbacks(applySettingsRunnable)
         endSession()
         removeTriggers()
         removeView(canvas)
@@ -273,5 +277,9 @@ class CursorEngine(private val service: AccessibilityService) :
 
     override fun onTouchOutside() {
         if (!injecting && settings.hideOnOutsideTouch) endSession()
+    }
+
+    private companion object {
+        const val SETTINGS_SETTLE_MS = 150L
     }
 }

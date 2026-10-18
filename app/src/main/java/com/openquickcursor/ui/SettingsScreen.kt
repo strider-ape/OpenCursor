@@ -1,5 +1,7 @@
 package com.openquickcursor.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -17,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,8 +30,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.openquickcursor.Defaults
+import com.openquickcursor.settings.QuickCursorImport
 import com.openquickcursor.settings.Settings
 import kotlin.math.roundToInt
 
@@ -44,6 +50,34 @@ fun SettingsScreen(settings: Settings, serviceEnabled: Boolean, onOpenAccessibil
     fun save(block: Settings.() -> Unit) {
         settings.block()
         revision++
+    }
+
+    val context = LocalContext.current
+    var importMessage by remember { mutableStateOf<String?>(null) }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        importMessage = try {
+            val json = context.contentResolver.openInputStream(uri)!!.bufferedReader().use { it.readText() }
+            val result = QuickCursorImport.apply(json, settings, context.resources.displayMetrics.density)
+            revision++
+            buildString {
+                append("Imported ${result.applied.size} settings.")
+                if (result.skipped.isNotEmpty()) {
+                    append("\n\nNot carried over:\n")
+                    result.skipped.forEach { append("• ").append(it).append('\n') }
+                }
+            }
+        } catch (e: Exception) {
+            "Couldn't read that file as a Quick Cursor backup.\n\n${e.message}"
+        }
+    }
+    importMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { importMessage = null },
+            confirmButton = { TextButton(onClick = { importMessage = null }) { Text("OK") } },
+            title = { Text("Import backup") },
+            text = { Text(message) },
+        )
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text("OpenQuickCursor") }) }) { padding ->
@@ -130,6 +164,18 @@ fun SettingsScreen(settings: Settings, serviceEnabled: Boolean, onOpenAccessibil
                 SettingsSection("Feedback") {
                     SwitchRow("Vibrate on cursor actions", settings.vibrateOnCursorAction) { save { vibrateOnCursorAction = it } }
                     SwitchRow("Ripple on tap", settings.rippleOnClick) { save { rippleOnClick = it } }
+                }
+
+                SettingsSection("Backup") {
+                    Text(
+                        "Bring over your setup from the original Quick Cursor app: pick a backup " +
+                            "file it exported (.json).",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Button(
+                        onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
+                        Modifier.fillMaxWidth(),
+                    ) { Text("Import Quick Cursor backup") }
                 }
 
                 OutlinedButton(onClick = { save { reset() } }, Modifier.fillMaxWidth()) {
