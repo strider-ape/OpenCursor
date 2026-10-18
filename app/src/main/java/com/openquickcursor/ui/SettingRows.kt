@@ -25,21 +25,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.openquickcursor.actions.Action
 
-/** A titled card that groups related settings. */
+/** A card that groups related settings, with an optional heading. */
 @Composable
-fun SettingsSection(title: String, content: @Composable () -> Unit) {
+fun SettingsSection(title: String? = null, content: @Composable () -> Unit) {
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (title != null) {
+                Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            }
             content()
         }
     }
 }
 
+/** Grey helper text under a setting that says what it does. */
 @Composable
-fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+fun Description(text: String?) {
+    if (text == null) return
+    Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable
+fun SwitchRow(label: String, checked: Boolean, description: String? = null, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.weight(1f))
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(label)
+            Description(description)
+        }
         Switch(checked = checked, onCheckedChange = onChange)
     }
 }
@@ -55,6 +67,7 @@ fun SliderRow(
     range: ClosedFloatingPointRange<Float>,
     step: Float,
     format: (Float) -> String,
+    description: String? = null,
     onChange: (Float) -> Unit,
 ) {
     var current by remember(value) { mutableFloatStateOf(value) }
@@ -62,8 +75,9 @@ fun SliderRow(
     Column {
         Row(Modifier.fillMaxWidth()) {
             Text(label, Modifier.weight(1f))
-            Text(format(current), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(format(current), color = MaterialTheme.colorScheme.primary)
         }
+        Description(description)
         Slider(
             value = current,
             onValueChange = { current = it },
@@ -75,10 +89,13 @@ fun SliderRow(
 }
 
 @Composable
-fun ActionRow(label: String, value: Action, onChange: (Action) -> Unit) {
+fun ActionRow(label: String, value: Action, description: String? = null, onChange: (Action) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.weight(1f))
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(label)
+            Description(description)
+        }
         Box {
             OutlinedButton(onClick = { open = true }) { Text(value.label()) }
             DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
