@@ -110,8 +110,30 @@ cursorY = (fingerY − src.top)  / src.height * dst.height + dst.top
 cursor moves *factor ×* as far as the thumb. Levels 0–11 map to factors
 1.5, 1.75, 2, 2.33, 2.66, 3, 3.33, 3.66, 4, 4.33, 4.66, 5. The portrait default (level 4)
 is **2.66×** and the landscape default (level 3) is **2.33×**.
-**Cursor area size**: level *n* covers (n + 1)/8 of the screen's long side (default 3 = half).
-[observed formula; which axis counts as the long side is inferred]
+
+### Simple-mode layout formulas [observed, confirmed against a real settings backup]
+
+W, H = screen size in the current orientation; `dp200` = 200 dp in px; `t` = trigger
+thickness (16 dp). Integer truncation as in the original. `sign` = +1 left, −1 right.
+
+| Area | Formula |
+|---|---|
+| Cursor area | full width × `H/8 × (cursorArea + 1)`, anchored at the **top** (default level 3 = top half) |
+| Thumb ("move") area size | cursor area ÷ speed factor |
+| Trigger length factor | length levels 0–10 → 0.25, 0.4, 0.55, 0.7, 0.85, 1, 1.2, 1.4, 1.6, 1.8, 2 |
+| Side or bottom? | portrait: position ≥ 5 → side edges, < 5 → bottom edge. Landscape: the reverse |
+| Portrait side trigger | `t × (factor·dp200)`, top = `H/2 + (H/2 − len)/5 × |position − 10|` |
+| Landscape side trigger | `t × (factor·H/4)`, top = `H/2 − len + (H/2)/5 × (position + 1)` |
+| Portrait bottom triggers | `(factor·W/3) × t` at the bottom, inset `(W/2 − len)/4 × (4 − position)` from each side |
+| Landscape bottom triggers | `(factor·dp200) × t` at the bottom, inset `(W/2 − len)/5 × (position − 5)` from each side |
+| Thumb area beside a side trigger | x inset `W/32 × trackerDistance` from that edge; vertical centre at `triggerTop + triggerLen × trackerAlign/6` |
+| Thumb area above a bottom trigger | top = `H − moveH − H/48 × trackerDistance`; x = `−sign·len/2 + (triggerCentreX − moveW/2) + sign·len/6 × trackerAlign` |
+
+Defaults: portrait position 8, length 5, speed 4, area 3, align 3, distance 3;
+landscape position 6, length 5, speed 3, area 3, align 6, distance 3.
+The thumb maps into the cursor area by absolute position (not relative to the touch-down
+point), and the cursor is clamped to the whole screen, so pushing beyond the thumb
+area still reaches the lower screen and the edges.
 
 Feel free to add an acceleration curve as your own improvement. The original has none.
 
