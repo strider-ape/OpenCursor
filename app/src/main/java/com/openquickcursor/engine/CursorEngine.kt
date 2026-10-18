@@ -2,7 +2,7 @@ package com.openquickcursor.engine
 
 import android.accessibilityservice.AccessibilityService
 import android.content.SharedPreferences
-import android.content.res.Configuration
+import android.graphics.RectF
 import android.graphics.Point
 import android.os.Handler
 import android.os.Looper
@@ -13,6 +13,7 @@ import com.openquickcursor.feedback.Haptics
 import com.openquickcursor.inject.GestureInjector
 import com.openquickcursor.input.CursorMapper
 import com.openquickcursor.input.EdgeActionResolver
+import com.openquickcursor.input.TriggerLayout
 import com.openquickcursor.overlay.CanvasView
 import com.openquickcursor.overlay.Overlays
 import com.openquickcursor.overlay.TrackerView
@@ -36,6 +37,7 @@ class CursorEngine(private val service: AccessibilityService) :
 
     private var canvas: CanvasView? = null
     private val triggers = mutableListOf<TriggerZoneView>()
+    private val zones = mutableMapOf<TriggerLayout.Side, TriggerLayout.Zone>()
     private var tracker: TrackerView? = null
     private var trackerParams: WindowManager.LayoutParams? = null
     private var mapper: CursorMapper? = null
@@ -97,19 +99,26 @@ class CursorEngine(private val service: AccessibilityService) :
     /** Rotation or display size changed: rebuild the edge triggers for the new screen. */
     fun onScreenChanged() = applySettings()
 
-    /** An invisible strip on each enabled side edge (SPEC.md §5 default layout). */
+    /** Trigger strips plus their thumb and cursor areas, from the simple-mode levels (SPEC.md §5–6). */
     private fun addTriggers() {
-        val width = Overlays.dp(service, settings.triggerWidthDp).toInt()
-        val height = screen.y * settings.triggerHeightPercent / 100
-        val y = (screen.y * settings.triggerCenterPercent / 100 - height / 2).coerceIn(0, screen.y - height)
+        val portrait = screen.x < screen.y
         val sides = buildList {
-            if (settings.leftTrigger) add(TriggerZoneView.Side.LEFT)
-            if (settings.rightTrigger) add(TriggerZoneView.Side.RIGHT)
+            if (settings.leftTrigger) add(TriggerLayout.Side.LEFT)
+            if (settings.rightTrigger) add(TriggerLayout.Side.RIGHT)
         }
-        for (side in sides) {
-            val x = if (side == TriggerZoneView.Side.LEFT) 0 else screen.x - width
-            TriggerZoneView(service, side, this).also {
-                wm.addView(it, Overlays.triggerParams(width, height, x, y))
+        val layout = TriggerLayout.zones(
+            sides = sides,
+            width = screen.x,
+            height = screen.y,
+            levels = (if (portrait) settings.portrait else settings.landscape).toLayout(),
+            triggerThickness = Overlays.dp(service, settings.triggerWidthDp).toInt().toFloat(),
+            dp200 = Overlays.dp(service, 200f),
+        )
+        for (zone in layout) {
+            zones[zone.side] = zone
+            val t = zone.trigger
+            TriggerZoneView(service, zone.side, this).also {
+                wm.addView(it, Overlays.triggerParams(t.width.toInt(), t.height.toInt(), t.left.toInt(), t.top.toInt()))
                 triggers += it
             }
         }
@@ -118,21 +127,15 @@ class CursorEngine(private val service: AccessibilityService) :
     private fun removeTriggers() {
         triggers.forEach(::removeView)
         triggers.clear()
+        zones.clear()
     }
 
     // --- Session
 
-    private fun startSession(side: TriggerZoneView.Side, x: Float, y: Float) {
+    private fun startSession(side: TriggerLayout.Side, x: Float, y: Float) {
         handler.removeCallbacks(hideRunnable)
-        val portrait = service.resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE
-        mapper = CursorMapper.forEdgeSession(
-            fingerX = x,
-            fingerY = y,
-            fromRight = side == TriggerZoneView.Side.RIGHT,
-            speed = settings.speedFactor(portrait),
-            screenWidth = screen.x,
-            screenHeight = screen.y,
-        )
+        val zone = zones[side] ?: return
+        mapper = CursorMapper(zone.move.toRectF(), zone.cursor.toRectF(), screen.x, screen.y)
         if (tracker == null) {
             trackerSize = Overlays.dp(service, settings.trackerSizeDp).toInt()
             val params = Overlays.trackerParams(trackerSize)
@@ -234,13 +237,15 @@ class CursorEngine(private val service: AccessibilityService) :
         if (settings.vibrateOnCursorAction) haptics.tick()
     }
 
+    private fun TriggerLayout.Box.toRectF() = RectF(left, top, right, bottom)
+
     private fun removeView(view: View?) {
         if (view?.isAttachedToWindow == true) wm.removeView(view)
     }
 
     // --- Trigger zone
 
-    override fun onTriggerActivated(side: TriggerZoneView.Side, x: Float, y: Float) = startSession(side, x, y)
+    override fun onTriggerActivated(side: TriggerLayout.Side, x: Float, y: Float) = startSession(side, x, y)
 
     override fun onTriggerDrag(x: Float, y: Float) = moveTo(x, y)
 

@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.openquickcursor.Defaults
 import com.openquickcursor.actions.Action
 import com.openquickcursor.input.EdgeActionResolver.Edge
+import com.openquickcursor.input.TriggerLayout
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
@@ -21,10 +22,30 @@ class Settings(context: Context) {
     var leftTrigger by bool("leftTrigger", true)
     var rightTrigger by bool("rightTrigger", true)
     var triggerWidthDp by float("triggerWidthDp", Defaults.TRIGGER_WIDTH_DP)
-    var triggerHeightPercent by int("triggerHeightPercent", (Defaults.TRIGGER_HEIGHT_FRACTION * 100).toInt())
-    var triggerCenterPercent by int("triggerCenterPercent", (Defaults.TRIGGER_CENTER_Y_FRACTION * 100).toInt())
-    var portraitSpeedLevel by int("portraitSpeedLevel", Defaults.PORTRAIT_SPEED_LEVEL)
-    var landscapeSpeedLevel by int("landscapeSpeedLevel", Defaults.LANDSCAPE_SPEED_LEVEL)
+
+    /** Layout levels for one orientation, each saved separately like the original. */
+    inner class LayoutLevels(portrait: Boolean) {
+        private val p = if (portrait) "portrait" else "landscape"
+        private val d = if (portrait) Defaults.PORTRAIT_LEVELS else Defaults.LANDSCAPE_LEVELS
+        var position by int("${p}Position", d.position)
+        var length by int("${p}Length", d.length)
+        var speed by int("${p}Speed", d.speed)
+        var cursorArea by int("${p}CursorArea", d.cursorArea)
+        var trackerAlign by int("${p}TrackerAlign", d.trackerAlign)
+        var trackerDistance by int("${p}TrackerDistance", d.trackerDistance)
+
+        fun toLayout() = TriggerLayout.Levels(
+            position = position,
+            length = length,
+            speedFactor = Defaults.SPEED_FACTORS[speed.coerceIn(0, Defaults.SPEED_FACTORS.lastIndex)],
+            cursorArea = cursorArea,
+            trackerAlign = trackerAlign,
+            trackerDistance = trackerDistance,
+        )
+    }
+
+    val portrait = LayoutLevels(portrait = true)
+    val landscape = LayoutLevels(portrait = false)
 
     // Cursor
     var cursorSizeDp by float("cursorSizeDp", Defaults.CURSOR_SIZE_DP)
@@ -57,11 +78,6 @@ class Settings(context: Context) {
         Edge.TOP to listOf(edgeTop),
         Edge.BOTTOM to listOf(edgeBottom),
     )
-
-    fun speedFactor(portrait: Boolean): Float {
-        val level = if (portrait) portraitSpeedLevel else landscapeSpeedLevel
-        return Defaults.SPEED_FACTORS[level.coerceIn(0, Defaults.SPEED_FACTORS.lastIndex)]
-    }
 
     /** Clears every saved value so all settings return to their defaults. */
     fun reset() = prefs.edit().clear().apply()

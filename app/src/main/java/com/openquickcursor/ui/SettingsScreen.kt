@@ -2,6 +2,7 @@ package com.openquickcursor.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,6 +12,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -20,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -37,6 +40,7 @@ import kotlin.math.roundToInt
 fun SettingsScreen(settings: Settings, serviceEnabled: Boolean, onOpenAccessibility: () -> Unit) {
     // Settings live in SharedPreferences, not Compose state; bumping this re-reads them.
     var revision by remember { mutableIntStateOf(0) }
+    var editPortrait by remember { mutableStateOf(true) }
     fun save(block: Settings.() -> Unit) {
         settings.block()
         revision++
@@ -57,24 +61,38 @@ fun SettingsScreen(settings: Settings, serviceEnabled: Boolean, onOpenAccessibil
                 SettingsSection("Triggers") {
                     SwitchRow("Left edge", settings.leftTrigger) { save { leftTrigger = it } }
                     SwitchRow("Right edge", settings.rightTrigger) { save { rightTrigger = it } }
-                    SliderRow("Width", settings.triggerWidthDp, 8f..48f, 2f, { "${it.roundToInt()} dp" }) {
+                    SliderRow("Thickness", settings.triggerWidthDp, 8f..48f, 2f, { "${it.roundToInt()} dp" }) {
                         save { triggerWidthDp = it }
                     }
-                    SliderRow("Height", settings.triggerHeightPercent.toFloat(), 10f..100f, 5f, { "${it.roundToInt()} %" }) {
-                        save { triggerHeightPercent = it.roundToInt() }
+                }
+
+                SettingsSection("Layout") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(editPortrait, { editPortrait = true }, label = { Text("Portrait") })
+                        FilterChip(!editPortrait, { editPortrait = false }, label = { Text("Landscape") })
                     }
-                    SliderRow("Position", settings.triggerCenterPercent.toFloat(), 10f..90f, 5f, { "${it.roundToInt()} % down" }) {
-                        save { triggerCenterPercent = it.roundToInt() }
+                    val levels = if (editPortrait) settings.portrait else settings.landscape
+                    SliderRow("Trigger position", levels.position.toFloat(), 0f..10f, 1f, { positionLabel(it, editPortrait) }) {
+                        save { levels.position = it.roundToInt() }
+                    }
+                    SliderRow("Trigger length", levels.length.toFloat(), 0f..10f, 1f, { "${it.roundToInt()}" }) {
+                        save { levels.length = it.roundToInt() }
+                    }
+                    SliderRow("Cursor speed", levels.speed.toFloat(), 0f..11f, 1f, ::speedLabel) {
+                        save { levels.speed = it.roundToInt() }
+                    }
+                    SliderRow("Cursor area", levels.cursorArea.toFloat(), 0f..7f, 1f, { "top ${it.roundToInt() + 1}/8" }) {
+                        save { levels.cursorArea = it.roundToInt() }
+                    }
+                    SliderRow("Thumb area align", levels.trackerAlign.toFloat(), 0f..6f, 1f, { "${it.roundToInt()}" }) {
+                        save { levels.trackerAlign = it.roundToInt() }
+                    }
+                    SliderRow("Thumb area distance", levels.trackerDistance.toFloat(), 0f..10f, 1f, { "${it.roundToInt()}" }) {
+                        save { levels.trackerDistance = it.roundToInt() }
                     }
                 }
 
                 SettingsSection("Cursor") {
-                    SliderRow("Speed (portrait)", settings.portraitSpeedLevel.toFloat(), 0f..11f, 1f, ::speedLabel) {
-                        save { portraitSpeedLevel = it.roundToInt() }
-                    }
-                    SliderRow("Speed (landscape)", settings.landscapeSpeedLevel.toFloat(), 0f..11f, 1f, ::speedLabel) {
-                        save { landscapeSpeedLevel = it.roundToInt() }
-                    }
                     SliderRow("Size", settings.cursorSizeDp, 20f..80f, 2f, { "${it.roundToInt()} dp" }) {
                         save { cursorSizeDp = it }
                     }
@@ -150,4 +168,11 @@ private fun StatusCard(serviceEnabled: Boolean, onOpenAccessibility: () -> Unit)
 private fun speedLabel(level: Float): String {
     val factor = Defaults.SPEED_FACTORS[level.roundToInt().coerceIn(0, Defaults.SPEED_FACTORS.lastIndex)]
     return "${level.roundToInt()} (${factor}×)"
+}
+
+/** Portrait puts triggers on the side edges at positions 5–10; landscape at 0–4. */
+private fun positionLabel(level: Float, portrait: Boolean): String {
+    val n = level.roundToInt()
+    val side = if (portrait) n >= 5 else n < 5
+    return "$n (${if (side) "side edges" else "bottom edge"})"
 }

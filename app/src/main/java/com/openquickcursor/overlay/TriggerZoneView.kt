@@ -5,6 +5,7 @@ import android.content.Context
 import android.view.MotionEvent
 import android.view.View
 import com.openquickcursor.Defaults
+import com.openquickcursor.input.TriggerLayout
 import kotlin.math.hypot
 
 /**
@@ -14,14 +15,12 @@ import kotlin.math.hypot
 @SuppressLint("ViewConstructor")
 class TriggerZoneView(
     context: Context,
-    val side: Side,
+    val side: TriggerLayout.Side,
     private val listener: Listener,
 ) : View(context) {
 
-    enum class Side { LEFT, RIGHT }
-
     interface Listener {
-        fun onTriggerActivated(side: Side, x: Float, y: Float)
+        fun onTriggerActivated(side: TriggerLayout.Side, x: Float, y: Float)
         fun onTriggerDrag(x: Float, y: Float)
         fun onTriggerReleased(x: Float, y: Float)
     }

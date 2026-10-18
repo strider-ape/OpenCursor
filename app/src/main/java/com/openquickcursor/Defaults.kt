@@ -7,14 +7,23 @@ import com.openquickcursor.input.EdgeActionResolver
 object Defaults {
     // Trigger zone (§5)
     const val TRIGGER_WIDTH_DP = 16f
-    const val TRIGGER_HEIGHT_FRACTION = 0.4f
-    const val TRIGGER_CENTER_Y_FRACTION = 0.6f
     const val ACTIVATION_DISTANCE_DP = 20f
 
     // Cursor speed (§6): levels 0..11 map to these factors
     val SPEED_FACTORS = floatArrayOf(1.5f, 1.75f, 2f, 2.33f, 2.66f, 3f, 3.33f, 3.66f, 4f, 4.33f, 4.66f, 5f)
-    const val PORTRAIT_SPEED_LEVEL = 4
-    const val LANDSCAPE_SPEED_LEVEL = 3
+
+    // Simple-mode layout levels (§5–6), per orientation
+    val PORTRAIT_LEVELS = Levels(position = 8, length = 5, speed = 4, cursorArea = 3, trackerAlign = 3, trackerDistance = 3)
+    val LANDSCAPE_LEVELS = Levels(position = 6, length = 5, speed = 3, cursorArea = 3, trackerAlign = 6, trackerDistance = 3)
+
+    data class Levels(
+        val position: Int,
+        val length: Int,
+        val speed: Int,
+        val cursorArea: Int,
+        val trackerAlign: Int,
+        val trackerDistance: Int,
+    )
 
     // Cursor (§10)
     const val CURSOR_SIZE_DP = 40f
@@ -49,12 +58,15 @@ object Defaults {
     const val EDGE_COLOR = 0xFFFD746C.toInt()
     const val EDGE_OPACITY = 0.75f
 
-    /** Our own starting bindings (a design choice, not taken from the original). */
+    /**
+     * Our own starting bindings. Side edges stay off: the thumb starts outside the thumb
+     * area on the trigger's side, so a side action would fire right after swiping in.
+     */
     val EDGE_BINDINGS = mapOf(
-        EdgeActionResolver.Edge.LEFT to listOf(Action.BACK),
-        EdgeActionResolver.Edge.RIGHT to listOf(Action.BACK),
+        EdgeActionResolver.Edge.LEFT to listOf(Action.NOTHING),
+        EdgeActionResolver.Edge.RIGHT to listOf(Action.NOTHING),
         EdgeActionResolver.Edge.TOP to listOf(Action.NOTIFICATIONS),
-        EdgeActionResolver.Edge.BOTTOM to listOf(Action.HOME),
+        EdgeActionResolver.Edge.BOTTOM to listOf(Action.NOTHING),
     )
 
     // Haptics (§10)
