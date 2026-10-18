@@ -145,6 +145,16 @@ fun SettingsScreen(settings: Settings, serviceEnabled: Boolean, onOpenAccessibil
                     SwitchRow("Hide when flung", settings.hideOnFling) { save { hideOnFling = it } }
                     SwitchRow("Hide on touch outside", settings.hideOnOutsideTouch) { save { hideOnOutsideTouch = it } }
                     ActionRow("Double tap", settings.doubleTapAction) { save { doubleTapAction = it } }
+                    SwitchRow("Long press opens action pie", settings.longTapOpensPie) { save { longTapOpensPie = it } }
+                }
+
+                SettingsSection("Action pie") {
+                    val slices = settings.pieActions
+                    slices.forEachIndexed { i, action ->
+                        ActionRow("Slice ${i + 1}", action) { picked ->
+                            save { pieActions = slices.toMutableList().also { it[i] = picked } }
+                        }
+                    }
                 }
 
                 SettingsSection("Edge actions") {

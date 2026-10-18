@@ -22,7 +22,7 @@ class QuickCursorImportTest {
           "edgeActionsThreshold": 75.0, "edgeActionsDelay": 500,
           "edgeActions": "{\"leftEdgeBar\":{\"edgeActions\":[{\"actionType\":\"backButton\"},{\"actionType\":\"nothing\"}],\"enabled\":false},\"topEdgeBar\":{\"edgeActions\":[{\"actionType\":\"volumeBar\"}],\"enabled\":true},\"rightEdgeBar\":{\"edgeActions\":[{\"actionType\":\"backButton\"}],\"enabled\":true}}",
           "rippleOnClick": false, "vibrationOnCursorAction": true,
-          "trackerActions": "[{\"actionType\":\"longTap\"},{\"actionType\":\"takeScreenshot\"}]",
+          "trackerActions": "[{\"actionType\":\"longTap\"},{\"actionType\":\"gestureSwipe\",\"extraData\":{\"swipeDirection\":\"BOTTOM\"}},{\"actionType\":\"copy\"}]",
           "trailType": "off"
         }
     """.trimIndent()
@@ -52,7 +52,8 @@ class QuickCursorImportTest {
         assertEquals(Action.BACK, settings.edgeRight)
         assertEquals(Action.NOTHING, settings.edgeTop)
         assertTrue(result.skipped.any { it.contains("volumeBar") })
-        assertTrue(result.skipped.any { it.contains("pie menu (2 actions") })
+        assertEquals(listOf(Action.LONG_TAP, Action.SWIPE_DOWN, Action.NOTHING), settings.pieActions)
+        assertTrue(result.skipped.any { it.contains("Pie slice 3: copy") })
         assertTrue(result.applied.size > 20)
     }
 }

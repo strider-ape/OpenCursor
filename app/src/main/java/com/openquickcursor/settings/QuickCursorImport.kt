@@ -27,6 +27,10 @@ object QuickCursorImport {
         "lockScreen" to Action.LOCK_SCREEN,
         "takeScreenshot" to Action.SCREENSHOT,
         "openAppDrawer" to Action.APP_DRAWER,
+        "longTap" to Action.LONG_TAP,
+        "doubleTap" to Action.DOUBLE_TAP,
+        "gesturePinchIn" to Action.PINCH_IN,
+        "gesturePinchOut" to Action.PINCH_OUT,
     )
 
     fun apply(json: String, settings: Settings, density: Float): Result {
@@ -103,7 +107,19 @@ object QuickCursorImport {
         bool("vibrationOnCursorAction", "Vibrate on cursor actions") { settings.vibrateOnCursorAction = it }
 
         // Features we don't have yet, so the user knows what didn't carry over
-        if (root.has("trackerActions")) skipped += "Tracker pie menu (${JSONArray(root.getString("trackerActions")).length()} actions, not built yet)"
+        root.optString("trackerActions").takeIf { it.isNotEmpty() }?.let { raw ->
+            val list = JSONArray(raw)
+            settings.pieActions = (0 until list.length()).map { i ->
+                val item = list.getJSONObject(i)
+                pieAction(item) ?: Action.NOTHING.also { skipped += "Pie slice ${i + 1}: ${item.optString("actionType")} (not supported yet)" }
+            }
+            applied += "Action pie (${list.length()} slices)"
+        }
+        val longTapType = root.optString("longTapTrackerAction").takeIf { it.isNotEmpty() }?.let(::actionType)
+        if (root.optBoolean("trackerLongTapTrackerActions", false) || longTapType?.startsWith("openTrackerActions") == true) {
+            settings.longTapOpensPie = true
+            applied += "Long press opens action pie"
+        }
         if (root.optString("trailType", "off") != "off") skipped += "Cursor trail (not built yet)"
         if (root.optString("appFilterMode", "disabled") != "disabled") skipped += "App blacklist (not built yet)"
         if (root.optString("autoTapMode", "disabled") != "disabled") skipped += "Auto tap (not built yet)"
@@ -137,6 +153,21 @@ object QuickCursorImport {
             }
             applied += label
         }
+    }
+
+    /** Pie slices may be swipes, whose direction lives in extraData. */
+    private fun pieAction(item: JSONObject): Action? {
+        val type = item.optString("actionType")
+        if (type == "gestureSwipe") {
+            return when (item.optJSONObject("extraData")?.optString("swipeDirection")) {
+                "TOP" -> Action.SWIPE_UP
+                "BOTTOM" -> Action.SWIPE_DOWN
+                "LEFT" -> Action.SWIPE_LEFT
+                "RIGHT" -> Action.SWIPE_RIGHT
+                else -> null
+            }
+        }
+        return ACTIONS[type]
     }
 
     /** Action values are stored as small JSON objects, sometimes with unquoted keys. */
