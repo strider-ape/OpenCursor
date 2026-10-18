@@ -14,11 +14,14 @@ import kotlin.math.hypot
 @SuppressLint("ViewConstructor")
 class TriggerZoneView(
     context: Context,
+    val side: Side,
     private val listener: Listener,
 ) : View(context) {
 
+    enum class Side { LEFT, RIGHT }
+
     interface Listener {
-        fun onTriggerActivated(x: Float, y: Float)
+        fun onTriggerActivated(side: Side, x: Float, y: Float)
         fun onTriggerDrag(x: Float, y: Float)
         fun onTriggerReleased(x: Float, y: Float)
     }
@@ -41,7 +44,7 @@ class TriggerZoneView(
             MotionEvent.ACTION_MOVE -> {
                 if (!activated && hypot(x - downX, y - downY) > activationDistance) {
                     activated = true
-                    listener.onTriggerActivated(x, y)
+                    listener.onTriggerActivated(side, x, y)
                 }
                 if (activated) listener.onTriggerDrag(x, y)
             }

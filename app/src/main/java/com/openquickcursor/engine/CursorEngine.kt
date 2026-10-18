@@ -30,7 +30,7 @@ class CursorEngine(private val service: AccessibilityService) :
     private val trackerSize = Overlays.dp(service, Defaults.TRACKER_SIZE_DP).toInt()
 
     private var canvas: CanvasView? = null
-    private var trigger: TriggerZoneView? = null
+    private val triggers = mutableListOf<TriggerZoneView>()
     private var tracker: TrackerView? = null
     private var trackerParams: WindowManager.LayoutParams? = null
     private var mapper: CursorMapper? = null
@@ -47,46 +47,53 @@ class CursorEngine(private val service: AccessibilityService) :
             wm.addView(it, Overlays.canvasParams())
             canvas = it
         }
-        addTrigger()
+        addTriggers()
     }
 
     fun stop() {
         endSession()
-        removeView(trigger)
+        removeTriggers()
         removeView(canvas)
-        trigger = null
         canvas = null
     }
 
-    /** Rotation or display size changed: rebuild the edge trigger for the new screen. */
+    /** Rotation or display size changed: rebuild the edge triggers for the new screen. */
     fun onScreenChanged() {
         endSession()
-        removeView(trigger)
-        trigger = null
+        removeTriggers()
         screen = Overlays.screenSize(service)
-        addTrigger()
+        addTriggers()
     }
 
-    private fun addTrigger() {
+    /** One invisible strip on each side edge (SPEC.md §5 default layout). */
+    private fun addTriggers() {
         val width = Overlays.dp(service, Defaults.TRIGGER_WIDTH_DP).toInt()
         val height = (screen.y * Defaults.TRIGGER_HEIGHT_FRACTION).toInt()
         val y = (screen.y * Defaults.TRIGGER_CENTER_Y_FRACTION - height / 2f).toInt()
-        TriggerZoneView(service, this).also {
-            wm.addView(it, Overlays.triggerParams(width, height, screen.x - width, y))
-            trigger = it
+        for (side in TriggerZoneView.Side.entries) {
+            val x = if (side == TriggerZoneView.Side.LEFT) 0 else screen.x - width
+            TriggerZoneView(service, side, this).also {
+                wm.addView(it, Overlays.triggerParams(width, height, x, y))
+                triggers += it
+            }
         }
+    }
+
+    private fun removeTriggers() {
+        triggers.forEach(::removeView)
+        triggers.clear()
     }
 
     // --- Session
 
-    private fun startSession(x: Float, y: Float) {
+    private fun startSession(side: TriggerZoneView.Side, x: Float, y: Float) {
         handler.removeCallbacks(hideRunnable)
         val portrait = service.resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE
         val level = if (portrait) Defaults.PORTRAIT_SPEED_LEVEL else Defaults.LANDSCAPE_SPEED_LEVEL
         mapper = CursorMapper.forEdgeSession(
             fingerX = x,
             fingerY = y,
-            fromRight = true,
+            fromRight = side == TriggerZoneView.Side.RIGHT,
             speed = Defaults.SPEED_FACTORS[level],
             screenWidth = screen.x,
             screenHeight = screen.y,
@@ -164,7 +171,7 @@ class CursorEngine(private val service: AccessibilityService) :
 
     // --- Trigger zone
 
-    override fun onTriggerActivated(x: Float, y: Float) = startSession(x, y)
+    override fun onTriggerActivated(side: TriggerZoneView.Side, x: Float, y: Float) = startSession(side, x, y)
 
     override fun onTriggerDrag(x: Float, y: Float) = moveTo(x, y)
 
