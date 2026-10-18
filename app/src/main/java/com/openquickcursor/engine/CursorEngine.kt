@@ -8,8 +8,10 @@ import android.os.Looper
 import android.view.View
 import android.view.WindowManager
 import com.openquickcursor.Defaults
+import com.openquickcursor.feedback.Haptics
 import com.openquickcursor.inject.GestureInjector
 import com.openquickcursor.input.CursorMapper
+import com.openquickcursor.input.EdgeActionResolver
 import com.openquickcursor.overlay.CanvasView
 import com.openquickcursor.overlay.Overlays
 import com.openquickcursor.overlay.TrackerView
@@ -35,19 +37,37 @@ class CursorEngine(private val service: AccessibilityService) :
     private var trackerParams: WindowManager.LayoutParams? = null
     private var mapper: CursorMapper? = null
     private var screen = Point()
+    private val haptics = Haptics(service)
+    private var edgeResolver: EdgeActionResolver? = null
+
+    /** Edge action currently highlighted; it fires after a short hold or on release. */
+    private var armedEdge: EdgeActionResolver.Hit? = null
 
     /** True while one of our own gestures is being injected. */
     private var injecting = false
 
     private val hideRunnable = Runnable { endSession() }
+    private val fireEdgeRunnable = Runnable { fireEdgeAction() }
 
     fun start() {
-        screen = Overlays.screenSize(service)
         CanvasView(service).also {
             wm.addView(it, Overlays.canvasParams())
             canvas = it
         }
+        updateScreen()
         addTriggers()
+    }
+
+    private fun updateScreen() {
+        screen = Overlays.screenSize(service)
+        canvas?.screenWidth = screen.x
+        canvas?.screenHeight = screen.y
+        edgeResolver = EdgeActionResolver(
+            Defaults.EDGE_BINDINGS,
+            Overlays.dp(service, Defaults.EDGE_THRESHOLD_DP),
+            screen.x,
+            screen.y,
+        )
     }
 
     fun stop() {
@@ -61,7 +81,7 @@ class CursorEngine(private val service: AccessibilityService) :
     fun onScreenChanged() {
         endSession()
         removeTriggers()
-        screen = Overlays.screenSize(service)
+        updateScreen()
         addTriggers()
     }
 
@@ -120,12 +140,39 @@ class CursorEngine(private val service: AccessibilityService) :
         params.y = (cy - trackerSize / 2f).toInt()
         wm.updateViewLayout(view, params)
 
-        val cursor = mapper?.map(cx, cy) ?: return
+        val m = mapper ?: return
+        val cursor = m.map(cx, cy)
         canvas?.showCursor(cursor.x, cursor.y)
+        updateEdge(edgeResolver?.resolve(m.unclamped))
+    }
+
+    private fun updateEdge(hit: EdgeActionResolver.Hit?) {
+        if (hit == armedEdge) return
+        handler.removeCallbacks(fireEdgeRunnable)
+        armedEdge = hit
+        canvas?.showEdge(hit)
+        if (hit != null) {
+            haptics.tick()
+            handler.postDelayed(fireEdgeRunnable, Defaults.EDGE_DELAY_MS)
+        }
+    }
+
+    private fun fireEdgeAction() {
+        val hit = armedEdge ?: return
+        endSession()
+        hit.action.perform(service)
+    }
+
+    /** Finger lifted after dragging: run a highlighted edge action, otherwise start the idle timer. */
+    private fun onDragFinished() {
+        if (armedEdge != null) fireEdgeAction() else scheduleHide()
     }
 
     private fun endSession() {
         handler.removeCallbacks(hideRunnable)
+        handler.removeCallbacks(fireEdgeRunnable)
+        armedEdge = null
+        canvas?.showEdge(null)
         removeView(tracker)
         tracker = null
         trackerParams = null
@@ -175,7 +222,7 @@ class CursorEngine(private val service: AccessibilityService) :
 
     override fun onTriggerDrag(x: Float, y: Float) = moveTo(x, y)
 
-    override fun onTriggerReleased(x: Float, y: Float) = scheduleHide()
+    override fun onTriggerReleased(x: Float, y: Float) = onDragFinished()
 
     // --- Tracker pad
 
@@ -187,7 +234,7 @@ class CursorEngine(private val service: AccessibilityService) :
 
     override fun onTrackerTouchStart() = handler.removeCallbacks(hideRunnable)
 
-    override fun onTrackerTouchEnd() = scheduleHide()
+    override fun onTrackerTouchEnd() = onDragFinished()
 
     override fun onTouchOutside() {
         if (!injecting) endSession()

@@ -1,5 +1,8 @@
 package com.openquickcursor
 
+import com.openquickcursor.actions.Action
+import com.openquickcursor.input.EdgeActionResolver
+
 /** Default values from SPEC.md. Sizes are in dp, times in milliseconds. */
 object Defaults {
     // Trigger zone (§5)
@@ -32,6 +35,21 @@ object Defaults {
     // Gestures (§8)
     const val TAP_DURATION_MS = 5L
     const val LONG_TAP_TIMEOUT_FACTOR = 1.5f
+
+    // Edge actions (§6, §10)
+    const val EDGE_THRESHOLD_DP = 30f
+    const val EDGE_DELAY_MS = 500L
+    const val EDGE_BAR_DP = 8f
+    const val EDGE_COLOR = 0xFFFD746C.toInt()
+    const val EDGE_OPACITY = 0.75f
+
+    /** Our own starting bindings (a design choice, not taken from the original). */
+    val EDGE_BINDINGS = mapOf(
+        EdgeActionResolver.Edge.LEFT to listOf(Action.BACK),
+        EdgeActionResolver.Edge.RIGHT to listOf(Action.BACK),
+        EdgeActionResolver.Edge.TOP to listOf(Action.NOTIFICATIONS),
+        EdgeActionResolver.Edge.BOTTOM to listOf(Action.HOME),
+    )
 
     // Haptics (§10)
     const val VIBRATION_MS = 10L

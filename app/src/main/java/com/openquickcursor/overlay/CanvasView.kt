@@ -4,8 +4,10 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.RectF
 import android.view.View
 import com.openquickcursor.Defaults
+import com.openquickcursor.input.EdgeActionResolver
 
 /**
  * The full-screen, untouchable layer. It never moves; the cursor is drawn at a position
@@ -33,6 +35,25 @@ class CanvasView(context: Context) : View(context) {
         setShadowLayer(3f, 0f, 0f, 0x66000000)
     }
     private val ripple = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val edgeBar = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = Defaults.EDGE_COLOR
+        alpha = (Defaults.EDGE_OPACITY * 255).toInt()
+    }
+    private val edgeLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Defaults.EDGE_COLOR
+        textSize = Overlays.dp(context, 14f)
+        textAlign = Paint.Align.CENTER
+        isFakeBoldText = true
+        setShadowLayer(4f, 0f, 0f, 0xAA000000.toInt())
+    }
+    private val barThickness = Overlays.dp(context, Defaults.EDGE_BAR_DP)
+    private val labelInset = Overlays.dp(context, 28f)
+    private var edgeHit: EdgeActionResolver.Hit? = null
+
+    /** Display size in pixels, kept current by the engine. */
+    var screenWidth = 0
+    var screenHeight = 0
 
     private val location = IntArray(2)
     private var cursorVisible = false
@@ -57,6 +78,13 @@ class CanvasView(context: Context) : View(context) {
 
     fun hideCursor() {
         cursorVisible = false
+        invalidate()
+    }
+
+    /** Highlights the selected edge segment and names its action; null clears it. */
+    fun showEdge(hit: EdgeActionResolver.Hit?) {
+        if (hit == edgeHit) return
+        edgeHit = hit
         invalidate()
     }
 
@@ -86,11 +114,39 @@ class CanvasView(context: Context) : View(context) {
             canvas.drawCircle(rippleX - ox, rippleY - oy, rippleMaxRadius * rippleProgress, ripple)
         }
 
+        edgeHit?.let { drawEdge(canvas, it, ox, oy) }
+
         if (!cursorVisible) return
         val cx = cursorX - ox
         val cy = cursorY - oy
         canvas.drawCircle(cx, cy, cursorRadius, fill)
         canvas.drawCircle(cx, cy, cursorRadius, stroke)
         canvas.drawCircle(cx, cy, dotRadius, dot)
+    }
+
+    private fun drawEdge(canvas: Canvas, hit: EdgeActionResolver.Hit, ox: Float, oy: Float) {
+        val w = screenWidth.toFloat()
+        val h = screenHeight.toFloat()
+        val vertical = hit.edge == EdgeActionResolver.Edge.LEFT || hit.edge == EdgeActionResolver.Edge.RIGHT
+        val segment = (if (vertical) h else w) / hit.segmentCount
+        val start = segment * hit.segment
+        val end = start + segment
+        val bar = when (hit.edge) {
+            EdgeActionResolver.Edge.LEFT -> RectF(0f, start, barThickness, end)
+            EdgeActionResolver.Edge.RIGHT -> RectF(w - barThickness, start, w, end)
+            EdgeActionResolver.Edge.TOP -> RectF(start, 0f, end, barThickness)
+            EdgeActionResolver.Edge.BOTTOM -> RectF(start, h - barThickness, end, h)
+        }
+        bar.offset(-ox, -oy)
+        canvas.drawRect(bar, edgeBar)
+
+        val label = hit.action.name.replace('_', ' ')
+        val (lx, ly) = when (hit.edge) {
+            EdgeActionResolver.Edge.LEFT -> labelInset * 2 to bar.centerY()
+            EdgeActionResolver.Edge.RIGHT -> bar.left - labelInset * 2 to bar.centerY()
+            EdgeActionResolver.Edge.TOP -> bar.centerX() to bar.bottom + labelInset * 2
+            EdgeActionResolver.Edge.BOTTOM -> bar.centerX() to bar.top - labelInset
+        }
+        canvas.drawText(label, lx, ly, edgeLabel)
     }
 }
