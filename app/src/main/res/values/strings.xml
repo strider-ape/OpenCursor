@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenQuickCursor</string>
+    <string name="accessibility_service_label">OpenQuickCursor</string>
+    <string name="accessibility_service_description">Shows a one-handed cursor when you swipe in from the screen edge, and taps wherever the cursor points. OpenQuickCursor uses this permission only to draw the cursor and perform taps. It reads no screen content and has no internet access.</string>
+    <string name="main_title">OpenQuickCursor</string>
+    <string name="main_how_to">Swipe in from the right edge of the screen to bring up the cursor. Move your thumb on the round pad to move the cursor, then tap the pad to tap where the cursor points.</string>
+    <string name="main_status_on">Service is ON</string>
+    <string name="main_status_off">Service is OFF. Turn it on in Accessibility settings.</string>
+    <string name="main_open_settings">Open accessibility settings</string>
+</resources>
