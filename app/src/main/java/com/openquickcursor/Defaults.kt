@@ -50,6 +50,8 @@ object Defaults {
     // Gestures (§8)
     const val TAP_DURATION_MS = 5L
     const val LONG_TAP_TIMEOUT_FACTOR = 1.5f
+    const val SWIPE_DURATION_MS = 80L
+    const val PINCH_DURATION_MS = 500L
 
     // Edge actions (§6, §10)
     const val EDGE_THRESHOLD_DP = 30f

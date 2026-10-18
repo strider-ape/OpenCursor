@@ -4,10 +4,11 @@ import android.accessibilityservice.AccessibilityService
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import com.openquickcursor.inject.GestureInjector
 
 /**
  * Bindable actions (SPEC.md §9). This first set covers the system buttons that
- * `performGlobalAction` provides; touch, toggle and launch actions come later.
+ * `performGlobalAction` provides plus gestures at the cursor; toggles and launches come later.
  */
 enum class Action(private val minSdk: Int = Build.VERSION_CODES.O) {
     NOTHING,
@@ -21,13 +22,35 @@ enum class Action(private val minSdk: Int = Build.VERSION_CODES.O) {
     SPLIT_SCREEN,
     LOCK_SCREEN(Build.VERSION_CODES.P),
     SCREENSHOT(Build.VERSION_CODES.P),
-    APP_DRAWER(Build.VERSION_CODES.S);
+    APP_DRAWER(Build.VERSION_CODES.S),
+
+    // Gestures performed at the cursor
+    TAP,
+    LONG_TAP,
+    DOUBLE_TAP,
+    SWIPE_UP,
+    SWIPE_DOWN,
+    SWIPE_LEFT,
+    SWIPE_RIGHT,
+    PINCH_IN,
+    PINCH_OUT;
 
     val isSupported: Boolean get() = Build.VERSION.SDK_INT >= minSdk
 
-    fun perform(service: AccessibilityService) {
+    /** Runs the action; gesture actions happen at ([x], [y]), usually the cursor. */
+    fun perform(service: AccessibilityService, x: Float = -1f, y: Float = -1f) {
         if (!isSupported) return
+        val inject by lazy { GestureInjector(service) }
         when (this) {
+            TAP -> inject.tap(x, y)
+            LONG_TAP -> inject.longTap(x, y)
+            DOUBLE_TAP -> inject.doubleTap(x, y)
+            SWIPE_UP -> inject.swipe(x, y, 0, -1)
+            SWIPE_DOWN -> inject.swipe(x, y, 0, 1)
+            SWIPE_LEFT -> inject.swipe(x, y, -1, 0)
+            SWIPE_RIGHT -> inject.swipe(x, y, 1, 0)
+            PINCH_IN -> inject.pinch(x, y, zoomIn = true)
+            PINCH_OUT -> inject.pinch(x, y, zoomIn = false)
             NOTHING -> Unit
             BACK -> service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
             HOME -> service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
