@@ -14,9 +14,9 @@ import kotlin.reflect.KProperty
  * the defaults in [Defaults]. The service and the settings screen share one file,
  * so changes made on screen reach the running cursor engine right away.
  */
-class Settings(context: Context) {
+class Settings(val prefs: SharedPreferences) {
 
-    val prefs: SharedPreferences = context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+    constructor(context: Context) : this(context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE))
 
     // Triggers
     var leftTrigger by bool("leftTrigger", true)
