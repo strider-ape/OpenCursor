@@ -2,6 +2,8 @@ package com.openquickcursor.overlay
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Rect
+import android.os.Build
 import android.view.MotionEvent
 import android.view.View
 import com.openquickcursor.Defaults
@@ -29,6 +31,17 @@ class TriggerZoneView(
     private var downX = 0f
     private var downY = 0f
     private var activated = false
+
+    /**
+     * With gesture navigation, the system's edge-swipe Back gesture would steal our swipe.
+     * Excluding the strip hands those touches to us (Android caps this at 200 dp per edge).
+     */
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            systemGestureExclusionRects = listOf(Rect(0, 0, width, height))
+        }
+    }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
