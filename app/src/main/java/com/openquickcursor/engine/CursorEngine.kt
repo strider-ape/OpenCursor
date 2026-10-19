@@ -50,6 +50,9 @@ class CursorEngine(private val service: AccessibilityService) :
     /** Edge action currently highlighted; it fires after a short hold or on release. */
     private var armedEdge: EdgeActionResolver.Hit? = null
 
+    /** Active while an edge volume bar is being slid. */
+    private var volumeBar: VolumeBar? = null
+
     /** True while one of our own gestures is being injected. */
     private var injecting = false
 
@@ -169,11 +172,20 @@ class CursorEngine(private val service: AccessibilityService) :
 
         val m = mapper ?: return
         val cursor = m.map(cx, cy)
+        volumeBar?.let {
+            it.update(cursor.x)
+            canvas?.volumeLevel = it.fraction
+            return
+        }
         canvas?.showCursor(cursor.x, cursor.y)
         updateEdge(edgeResolver?.resolve(m.unclamped))
     }
 
     private fun updateEdge(hit: EdgeActionResolver.Hit?) {
+        if (hit?.action == Action.VOLUME_BAR) {
+            startVolumeBar()
+            return
+        }
         if (hit == armedEdge) return
         handler.removeCallbacks(fireEdgeRunnable)
         armedEdge = hit
@@ -195,11 +207,24 @@ class CursorEngine(private val service: AccessibilityService) :
     }
 
     /** Finger lifted after dragging: run a highlighted edge action, otherwise start the idle timer. */
+    /** Edge "volume bar": the cursor turns into a slider until the finger lifts. */
+    private fun startVolumeBar() {
+        val x = mapper?.cursor?.x ?: return
+        handler.removeCallbacks(fireEdgeRunnable)
+        armedEdge = null
+        canvas?.showEdge(null)
+        canvas?.hideCursor()
+        volumeBar = VolumeBar(service, x, screen.x).also { canvas?.volumeLevel = it.fraction }
+        vibrate()
+    }
+
     private fun onDragFinished() {
-        if (armedEdge != null) fireEdgeAction() else scheduleHide()
+        if (volumeBar != null) endSession() else if (armedEdge != null) fireEdgeAction() else scheduleHide()
     }
 
     private fun endSession() {
+        volumeBar = null
+        canvas?.volumeLevel = null
         handler.removeCallbacks(hideRunnable)
         handler.removeCallbacks(fireEdgeRunnable)
         armedEdge = null

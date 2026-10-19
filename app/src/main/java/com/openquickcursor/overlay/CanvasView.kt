@@ -56,6 +56,13 @@ class CanvasView(context: Context) : View(context) {
     private val labelInset = Overlays.dp(context, 28f)
     private var edgeHit: EdgeActionResolver.Hit? = null
 
+    /** Volume bar fill (0..1) while sliding it; null hides the bar. */
+    var volumeLevel: Float? = null
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     /** Open tracker actions pie, drawn above the cursor; null when closed. */
     var pie: PieMenu? = null
         set(value) {
@@ -138,6 +145,7 @@ class CanvasView(context: Context) : View(context) {
         }
 
         edgeHit?.let { drawEdge(canvas, it, ox, oy) }
+        volumeLevel?.let { drawVolume(canvas, it, ox, oy) }
 
         if (!cursorVisible) return
         val cx = cursorX - ox
@@ -146,6 +154,18 @@ class CanvasView(context: Context) : View(context) {
         canvas.drawCircle(cx, cy, cursorSizePx / 2f, stroke)
         canvas.drawCircle(cx, cy, dotRadius, dot)
         pie?.draw(canvas, ox, oy, piePaints)
+    }
+
+    /** A pill-shaped bar near the top: grey track, orange fill, speaker label. */
+    private fun drawVolume(canvas: Canvas, level: Float, ox: Float, oy: Float) {
+        val w = screenWidth * 0.7f
+        val h = Overlays.dp(context, 14f)
+        val left = (screenWidth - w) / 2f - ox
+        val top = screenHeight * 0.15f - oy
+        val r = h / 2f
+        canvas.drawRoundRect(RectF(left, top, left + w, top + h), r, r, piePaints.outer)
+        canvas.drawRoundRect(RectF(left, top, left + w * level.coerceIn(0f, 1f), top + h), r, r, edgeBar)
+        canvas.drawText("🔊 ${(level * 100).toInt()}%", left + w / 2f, top - Overlays.dp(context, 10f), edgeLabel)
     }
 
     private fun drawEdge(canvas: Canvas, hit: EdgeActionResolver.Hit, ox: Float, oy: Float) {

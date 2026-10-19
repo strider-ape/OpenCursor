@@ -33,7 +33,10 @@ enum class Action(private val minSdk: Int = Build.VERSION_CODES.O) {
     SWIPE_LEFT,
     SWIPE_RIGHT,
     PINCH_IN,
-    PINCH_OUT;
+    PINCH_OUT,
+
+    /** As an edge action: slide left/right to set media volume. Elsewhere: shows the volume panel. */
+    VOLUME_BAR;
 
     val isSupported: Boolean get() = Build.VERSION.SDK_INT >= minSdk
 
@@ -51,6 +54,7 @@ enum class Action(private val minSdk: Int = Build.VERSION_CODES.O) {
             SWIPE_RIGHT -> inject.swipe(x, y, 1, 0)
             PINCH_IN -> inject.pinch(x, y, zoomIn = true)
             PINCH_OUT -> inject.pinch(x, y, zoomIn = false)
+            VOLUME_BAR -> com.openquickcursor.engine.VolumeBar.showPanel(service)
             NOTHING -> Unit
             BACK -> service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
             HOME -> service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)

@@ -31,6 +31,7 @@ object QuickCursorImport {
         "doubleTap" to Action.DOUBLE_TAP,
         "gesturePinchIn" to Action.PINCH_IN,
         "gesturePinchOut" to Action.PINCH_OUT,
+        "volumeBar" to Action.VOLUME_BAR,
     )
 
     fun apply(json: String, settings: Settings, density: Float): Result {

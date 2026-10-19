@@ -47,11 +47,10 @@ class QuickCursorImportTest {
         assertEquals(Action.NOTHING, settings.doubleTapAction)
         assertFalse(settings.rippleOnClick)
 
-        // Disabled bar -> nothing; enabled bar -> its first action; unknown action -> nothing + skipped
+        // Disabled bar -> nothing; enabled bar -> its first action
         assertEquals(Action.NOTHING, settings.edgeLeft)
         assertEquals(Action.BACK, settings.edgeRight)
-        assertEquals(Action.NOTHING, settings.edgeTop)
-        assertTrue(result.skipped.any { it.contains("volumeBar") })
+        assertEquals(Action.VOLUME_BAR, settings.edgeTop)
         assertEquals(listOf(Action.LONG_TAP, Action.SWIPE_DOWN, Action.NOTHING), settings.pieActions)
         assertTrue(result.skipped.any { it.contains("Pie slice 3: copy") })
         assertTrue(result.applied.size > 20)
