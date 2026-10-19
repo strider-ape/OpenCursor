@@ -56,6 +56,8 @@ class CanvasView(context: Context) : View(context) {
     private val labelInset = Overlays.dp(context, 28f)
     private var edgeHit: EdgeActionResolver.Hit? = null
 
+    private val volumeArt = VolumeBarArt(context)
+
     /** Volume bar fill (0..1) while sliding it; null hides the bar. */
     var volumeLevel: Float? = null
         set(value) {
@@ -156,17 +158,10 @@ class CanvasView(context: Context) : View(context) {
         pie?.draw(canvas, ox, oy, piePaints)
     }
 
-    /** A pill-shaped bar near the top: grey track, orange fill, speaker label. */
-    private fun drawVolume(canvas: Canvas, level: Float, ox: Float, oy: Float) {
-        val w = screenWidth * 0.7f
-        val h = Overlays.dp(context, 14f)
-        val left = (screenWidth - w) / 2f - ox
-        val top = screenHeight * 0.15f - oy
-        val r = h / 2f
-        canvas.drawRoundRect(RectF(left, top, left + w, top + h), r, r, piePaints.outer)
-        canvas.drawRoundRect(RectF(left, top, left + w * level.coerceIn(0f, 1f), top + h), r, r, edgeBar)
-        canvas.drawText("🔊 ${(level * 100).toInt()}%", left + w / 2f, top - Overlays.dp(context, 10f), edgeLabel)
-    }
+    /** The volume slider artwork, centred near the top of the screen. */
+    private fun drawVolume(canvas: Canvas, level: Float, ox: Float, oy: Float) =
+        volumeArt.draw(canvas, level, screenWidth / 2f - ox, screenHeight * 0.1f - oy, screenWidth)
+
 
     private fun drawEdge(canvas: Canvas, hit: EdgeActionResolver.Hit, ox: Float, oy: Float) {
         val w = screenWidth.toFloat()
