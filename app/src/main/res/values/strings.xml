@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">OpenQuickCursor</string>
-    <string name="accessibility_service_label">OpenQuickCursor</string>
-    <string name="accessibility_service_description">Shows a one-handed cursor when you swipe in from the screen edge, and taps wherever the cursor points. OpenQuickCursor uses this permission only to draw the cursor and perform taps. It reads no screen content and has no internet access.</string>
+    <string name="app_name">OpenCursor</string>
+    <string name="accessibility_service_label">OpenCursor</string>
+    <string name="accessibility_service_description">Shows a one-handed cursor when you swipe in from the screen edge, and taps wherever the cursor points. OpenCursor uses this permission only to draw the cursor and perform taps. It reads no screen content and has no internet access.</string>
 </resources>

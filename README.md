@@ -1,10 +1,10 @@
-# OpenQuickCursor
+# OpenCursor
 
 A free, open-source one-handed cursor for Android. Swipe in from the edge of the screen and a
 small round pad appears under your thumb, with a cursor that reaches the top of the screen.
 Move the pad to aim, tap it to tap where the cursor points. No root needed.
 
-OpenQuickCursor is an independent, clean-room implementation inspired by the behaviour of
+OpenCursor is an independent, clean-room implementation inspired by the behaviour of
 the Quick Cursor app. It shares no code or assets with it and is not affiliated with it.
 
 ## Features
@@ -25,11 +25,11 @@ the Quick Cursor app. It shares no code or assets with it and is not affiliated 
 
 ## Install
 
-1. Download the latest `OpenQuickCursor-vX.Y.Z.apk` from
+1. Download the latest `OpenCursor-vX.Y.Z.apk` from
    [Releases](https://github.com/strider-ape/OpenQuickCursor/releases) and install it.
-2. Open OpenQuickCursor and tap **Open accessibility settings**, then turn on **OpenQuickCursor**.
+2. Open OpenCursor and tap **Open accessibility settings**, then turn on **OpenCursor**.
 3. On Android 13 and newer, if the switch is greyed out or says "Restricted setting":
-   open **Settings → Apps → OpenQuickCursor → ⋮ → Allow restricted settings**, then try again.
+   open **Settings → Apps → OpenCursor → ⋮ → Allow restricted settings**, then try again.
 
 ## Use
 
@@ -84,6 +84,6 @@ The code lives in `app/src/main/java/com/openquickcursor/`:
 
 ## License
 
-OpenQuickCursor is free software, licensed under the [GNU General Public License v3.0](LICENSE).
+OpenCursor is free software, licensed under the [GNU General Public License v3.0](LICENSE).
 You can use, study, share and modify it; any distributed modified version must also be
 released under the GPL-3.0 with its source code.

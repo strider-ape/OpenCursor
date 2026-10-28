@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 /**
  * Reads a settings backup exported by the original Quick Cursor app and applies every
- * value OpenQuickCursor supports. Sizes in those backups are raw pixels, so they are
+ * value OpenCursor supports. Sizes in those backups are raw pixels, so they are
  * converted with this device's [density] to land on the same pixel sizes.
  */
 object QuickCursorImport {

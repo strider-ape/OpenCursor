@@ -76,7 +76,7 @@ fun SettingsScreen(settings: Settings, serviceEnabled: Boolean, onOpenAccessibil
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(page?.title ?: "OpenQuickCursor") },
+                title = { Text(page?.title ?: "OpenCursor") },
                 navigationIcon = {
                     if (page != null) {
                         IconButton(onClick = { page = null }) { Text("←", style = MaterialTheme.typography.titleLarge) }
@@ -342,7 +342,7 @@ private fun StatusCard(serviceEnabled: Boolean, onOpenAccessibility: () -> Unit)
                 if (serviceEnabled) {
                     "Swipe in from a screen edge to bring up the cursor. Move the round pad to aim, tap it to tap."
                 } else {
-                    "Turn on OpenQuickCursor in Accessibility settings to start."
+                    "Turn on OpenCursor in Accessibility settings to start."
                 },
             )
             Button(onClick = onOpenAccessibility) { Text("Open accessibility settings") }
