@@ -9,8 +9,8 @@
   </defs>
   <rect width="512" height="512" rx="116" fill="url(#bg)"/>
   <!-- Path from the thumb pad up to the cursor -->
-  <path d="M250 346 Q 162 340 158 254" fill="none" stroke="#FFFFFF" stroke-opacity="0.8"
-        stroke-width="32" stroke-linecap="round" stroke-dasharray="1 44"/>
+  <path d="M252 384 Q 96 396 146 256" fill="none" stroke="#FFFFFF" stroke-opacity="0.7"
+        stroke-width="22" stroke-linecap="round" stroke-dasharray="2 34"/>
   <!-- Big thumb pad (bottom right) -->
   <circle cx="346" cy="352" r="98" fill="#FFFFFF" fill-opacity="0.26"/>
   <circle cx="346" cy="352" r="98" fill="none" stroke="#FFFFFF" stroke-opacity="0.75" stroke-width="10"/>
