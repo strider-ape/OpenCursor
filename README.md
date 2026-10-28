@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.svg" width="120" alt="OpenCursor logo"></p>
+
 # OpenCursor
 
 A free, open-source one-handed cursor for Android. Swipe in from the edge of the screen and a
