@@ -59,23 +59,23 @@ class VolumeSlider(private val context: Context) {
     }
 
     /** Draws the card centred at [centerX] with its top at [top]; [level] is 0..1. */
-    fun draw(canvas: Canvas, level: Float, centerX: Float, top: Float) {
+    fun draw(canvas: Canvas, level: Float, centerX: Float, top: Float, screenWidth: Int) {
         updateColors()
         val l = level.coerceIn(0f, 1f)
-        val width = dp(CARD_WIDTH_DP)
-        val box = RectF(centerX - width / 2f, top, centerX + width / 2f, top + dp(84f))
+        val width = min(screenWidth - dp(32f), dp(400f))
+        val box = RectF(centerX - width / 2f, top, centerX + width / 2f, top + dp(96f))
         canvas.drawRoundRect(box, dp(28f), dp(28f), card)
 
-        val pad = dp(PAD_DP)
+        val pad = dp(24f)
         val left = box.left + pad
         val right = box.right - pad
-        val textY = box.top + dp(30f)
+        val textY = box.top + dp(32f)
         canvas.drawText("Media volume", left, textY, label)
         canvas.drawText("${(l * 100).toInt()}%", right, textY, value)
 
         // Track geometry, following Material 3's slider: 16 dp track, 4 dp handle, 6 dp gaps.
         val trackH = dp(16f)
-        val cy = box.top + dp(58f)
+        val cy = box.top + dp(64f)
         val handleW = dp(4f)
         val gap = dp(6f)
         val outer = trackH / 2f
@@ -107,20 +107,5 @@ class VolumeSlider(private val context: Context) {
         val rr = min(rightRadius, (r - l) / 2f)
         path.reset()
         path.addRoundRect(RectF(l, t, r, b), floatArrayOf(lr, lr, rr, rr, rr, rr, lr, lr), Path.Direction.CW)
-    }
-
-    companion object {
-        /** A compact card: about a third of a phone's width. */
-        const val CARD_WIDTH_DP = 280f
-        const val PAD_DP = 20f
-
-        /** Cursor travel for the full 0–100 % range: the track's own width. */
-        fun trackWidthPx(context: Context) = Overlays.dp(context, CARD_WIDTH_DP - 2 * PAD_DP)
-
-        /** Keeps the card on screen with a 16 dp margin while centring it on [x]. */
-        fun clampCenter(context: Context, x: Float, screenWidth: Int): Float {
-            val half = Overlays.dp(context, CARD_WIDTH_DP) / 2f + Overlays.dp(context, 16f)
-            return x.coerceIn(half, (screenWidth - half).coerceAtLeast(half))
-        }
     }
 }
