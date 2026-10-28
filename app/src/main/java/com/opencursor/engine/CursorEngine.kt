@@ -208,6 +208,7 @@ class CursorEngine(private val service: AccessibilityService) :
         val cursor = m.map(cx, cy)
         volumeBar?.let {
             it.update(cursor.x)
+            canvas?.volumeLevel = it.fraction
             return
         }
         canvas?.showCursor(cursor.x, cursor.y)
@@ -247,7 +248,7 @@ class CursorEngine(private val service: AccessibilityService) :
         armedEdge = null
         canvas?.showEdge(null)
         canvas?.hideCursor()
-        volumeBar = VolumeBar(service, x, screen.x)
+        volumeBar = VolumeBar(service, x, screen.x).also { canvas?.volumeLevel = it.fraction }
         vibrate()
     }
 
@@ -257,6 +258,7 @@ class CursorEngine(private val service: AccessibilityService) :
 
     private fun endSession() {
         volumeBar = null
+        canvas?.volumeLevel = null
         handler.removeCallbacks(hideRunnable)
         handler.removeCallbacks(fireEdgeRunnable)
         armedEdge = null
