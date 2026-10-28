@@ -1,13 +1,20 @@
 package com.openquickcursor.engine
 
 import android.accessibilityservice.AccessibilityService
+import android.app.KeyguardManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.graphics.RectF
 import android.graphics.Point
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.view.View
 import android.view.WindowManager
+import androidx.core.content.ContextCompat
 import com.openquickcursor.Defaults
 import com.openquickcursor.actions.Action
 import com.openquickcursor.feedback.Haptics
@@ -74,6 +81,29 @@ class CursorEngine(private val service: AccessibilityService) :
         }
         applySettings()
         settings.prefs.registerOnSharedPreferenceChangeListener(settingsListener)
+        ContextCompat.registerReceiver(
+            service,
+            screenReceiver,
+            IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_USER_PRESENT)
+            },
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+    }
+
+    /** Triggers only exist while the screen is on and unlocked (SPEC.md §4 states). */
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (canvas != null) applySettings()
+        }
+    }
+
+    private fun screenUsable(): Boolean {
+        val power = service.getSystemService(PowerManager::class.java)
+        val keyguard = service.getSystemService(KeyguardManager::class.java)
+        return power.isInteractive && !keyguard.isKeyguardLocked
     }
 
     /** Rebuilds everything that depends on settings or screen size. */
@@ -82,7 +112,7 @@ class CursorEngine(private val service: AccessibilityService) :
         removeTriggers()
         updateScreen()
         canvas?.cursorSizePx = Overlays.dp(service, settings.cursorSizeDp)
-        addTriggers()
+        if (screenUsable()) addTriggers()
     }
 
     private fun updateScreen() {
@@ -97,6 +127,10 @@ class CursorEngine(private val service: AccessibilityService) :
     }
 
     fun stop() {
+        try {
+            service.unregisterReceiver(screenReceiver)
+        } catch (_: IllegalArgumentException) {
+        }
         settings.prefs.unregisterOnSharedPreferenceChangeListener(settingsListener)
         handler.removeCallbacks(applySettingsRunnable)
         endSession()
@@ -275,8 +309,17 @@ class CursorEngine(private val service: AccessibilityService) :
 
     private fun TriggerLayout.Box.toRectF() = RectF(left, top, right, bottom)
 
+    /**
+     * Always asks the window manager to drop the view: a window added just before the
+     * screen locked may not report attached yet, and skipping it left an orphaned pad.
+     */
     private fun removeView(view: View?) {
-        if (view?.isAttachedToWindow == true) wm.removeView(view)
+        if (view == null) return
+        try {
+            wm.removeViewImmediate(view)
+        } catch (_: IllegalArgumentException) {
+            // Never added, or already gone.
+        }
     }
 
     // --- Trigger zone
