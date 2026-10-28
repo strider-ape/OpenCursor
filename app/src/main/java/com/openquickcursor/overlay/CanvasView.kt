@@ -56,15 +56,6 @@ class CanvasView(context: Context) : View(context) {
     private val labelInset = Overlays.dp(context, 28f)
     private var edgeHit: EdgeActionResolver.Hit? = null
 
-    private val volumeArt = VolumeBarArt(context)
-
-    /** Volume bar fill (0..1) while sliding it; null hides the bar. */
-    var volumeLevel: Float? = null
-        set(value) {
-            field = value
-            invalidate()
-        }
-
     /** Open tracker actions pie, drawn above the cursor; null when closed. */
     var pie: PieMenu? = null
         set(value) {
@@ -147,7 +138,6 @@ class CanvasView(context: Context) : View(context) {
         }
 
         edgeHit?.let { drawEdge(canvas, it, ox, oy) }
-        volumeLevel?.let { drawVolume(canvas, it, ox, oy) }
 
         if (!cursorVisible) return
         val cx = cursorX - ox
@@ -157,10 +147,6 @@ class CanvasView(context: Context) : View(context) {
         canvas.drawCircle(cx, cy, dotRadius, dot)
         pie?.draw(canvas, ox, oy, piePaints)
     }
-
-    /** The volume slider artwork, centred near the top of the screen. */
-    private fun drawVolume(canvas: Canvas, level: Float, ox: Float, oy: Float) =
-        volumeArt.draw(canvas, level, screenWidth / 2f - ox, screenHeight * 0.1f - oy, screenWidth)
 
 
     private fun drawEdge(canvas: Canvas, hit: EdgeActionResolver.Hit, ox: Float, oy: Float) {
