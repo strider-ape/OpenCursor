@@ -1,7 +1,13 @@
 name: Release
 
-# Push a tag like v0.3.1 to build a signed APK and publish it as a GitHub release.
+# Builds a signed APK and publishes it as a GitHub release. Run it from the Actions tab
+# (Release -> Run workflow) with a version like 0.3.1, or push a tag like v0.3.1.
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, e.g. 0.3.1
+        required: true
   push:
     tags: ['v*']
 
@@ -22,9 +28,12 @@ jobs:
       - name: Version from tag
         id: version
         run: |
-          name="${GITHUB_REF_NAME#v}"
+          name="${{ inputs.version }}"
+          [ -z "$name" ] && name="${GITHUB_REF_NAME#v}"
+          name="${name#v}"
           IFS=. read -r major minor patch <<< "$name"
           echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "tag=v$name" >> "$GITHUB_OUTPUT"
           echo "code=$((major * 10000 + minor * 100 + patch))" >> "$GITHUB_OUTPUT"
 
       - name: Signing key from secrets
@@ -50,11 +59,13 @@ jobs:
           -PappVersionCode=${{ steps.version.outputs.code }}
 
       - name: Name the APK
-        run: cp app/build/outputs/apk/release/app-release.apk "OpenCursor-${GITHUB_REF_NAME}.apk"
+        run: cp app/build/outputs/apk/release/app-release.apk "OpenCursor-${{ steps.version.outputs.tag }}.apk"
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: OpenCursor-${{ github.ref_name }}.apk
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          files: OpenCursor-${{ steps.version.outputs.tag }}.apk
           generate_release_notes: true
           make_latest: true
 
