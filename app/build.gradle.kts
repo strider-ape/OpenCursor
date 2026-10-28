@@ -18,8 +18,8 @@ android {
         applicationId = "com.opencursor"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.3.1"
+        versionCode = 9
+        versionName = "0.3.3"
     }
 
     signingConfigs {
