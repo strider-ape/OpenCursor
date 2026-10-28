@@ -18,8 +18,9 @@ android {
         applicationId = "com.opencursor"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.3.0"
+        // CI passes these from the release tag (v1.2.3 -> "1.2.3", code 10203).
+        versionName = providers.gradleProperty("appVersionName").getOrElse("0.3.0")
+        versionCode = providers.gradleProperty("appVersionCode").map { it.toInt() }.getOrElse(6)
     }
 
     signingConfigs {
