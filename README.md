@@ -69,7 +69,7 @@ keyPassword=...
 [SPEC.md](SPEC.md) is the behaviour specification the app is implemented from: windows,
 trigger layout formulas, cursor mapping, gesture timings, actions and defaults.
 
-The code lives in `app/src/main/java/com/openquickcursor/`:
+The code lives in `app/src/main/java/com/opencursor/`:
 
 | Package | What it does |
 |---|---|

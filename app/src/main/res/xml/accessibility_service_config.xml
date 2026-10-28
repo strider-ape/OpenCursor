@@ -7,4 +7,4 @@
     android:canRetrieveWindowContent="false"
     android:description="@string/accessibility_service_description"
     android:notificationTimeout="100"
-    android:settingsActivity="com.openquickcursor.MainActivity" />
+    android:settingsActivity="com.opencursor.MainActivity" />

@@ -11,11 +11,11 @@ val keystoreProps = Properties().apply {
 }
 
 android {
-    namespace = "com.openquickcursor"
+    namespace = "com.opencursor"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.openquickcursor"
+        applicationId = "com.opencursor"
         minSdk = 26
         targetSdk = 36
         versionCode = 5
