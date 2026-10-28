@@ -81,3 +81,9 @@ The code lives in `app/src/main/java/com/openquickcursor/`:
 | `actions` | The bindable actions |
 | `settings` | Saved settings and the Quick Cursor backup importer |
 | `ui` | The settings screens (Jetpack Compose) |
+
+## License
+
+OpenQuickCursor is free software, licensed under the [GNU General Public License v3.0](LICENSE).
+You can use, study, share and modify it; any distributed modified version must also be
+released under the GPL-3.0 with its source code.
