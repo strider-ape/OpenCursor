@@ -26,7 +26,7 @@ the Quick Cursor app. It shares no code or assets with it and is not affiliated 
 ## Install
 
 1. Download the latest `OpenCursor-vX.Y.Z.apk` from
-   [Releases](https://github.com/strider-ape/OpenQuickCursor/releases) and install it.
+   [Releases](https://github.com/strider-ape/OpenCursor/releases) and install it.
 2. Open OpenCursor and tap **Open accessibility settings**, then turn on **OpenCursor**.
 3. On Android 13 and newer, if the switch is greyed out or says "Restricted setting":
    open **Settings → Apps → OpenCursor → ⋮ → Allow restricted settings**, then try again.
