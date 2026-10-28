@@ -1,21 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <title>OpenCursor</title>
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FFB36B"/>
-      <stop offset="0.5" stop-color="#FD746C"/>
-      <stop offset="1" stop-color="#E0457B"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-  <!-- Path from the thumb pad up to the cursor -->
-  <path d="M252 384 Q 96 396 146 256" fill="none" stroke="#FFFFFF" stroke-opacity="0.7"
+  <rect width="512" height="512" rx="116" fill="#FD746C"/>
+  <!-- Straight dotted path from the thumb pad up to the cursor -->
+  <path d="M290 296 L 206 210" fill="none" stroke="#FFFFFF" stroke-opacity="0.7"
         stroke-width="22" stroke-linecap="round" stroke-dasharray="2 34"/>
   <!-- Big thumb pad (bottom right) -->
-  <circle cx="346" cy="352" r="98" fill="#FFFFFF" fill-opacity="0.26"/>
-  <circle cx="346" cy="352" r="98" fill="none" stroke="#FFFFFF" stroke-opacity="0.75" stroke-width="10"/>
+  <circle cx="362" cy="368" r="98" fill="#FFFFFF" fill-opacity="0.26"/>
+  <circle cx="362" cy="368" r="98" fill="none" stroke="#FFFFFF" stroke-opacity="0.75" stroke-width="10"/>
   <!-- Cursor (top left): ring with a centre dot -->
-  <circle cx="162" cy="162" r="70" fill="#1C1B22" fill-opacity="0.14"/>
-  <circle cx="162" cy="162" r="70" fill="none" stroke="#FFFFFF" stroke-width="22"/>
-  <circle cx="162" cy="162" r="19" fill="#FFFFFF"/>
+  <circle cx="142" cy="142" r="70" fill="#1C1B22" fill-opacity="0.14"/>
+  <circle cx="142" cy="142" r="70" fill="none" stroke="#FFFFFF" stroke-width="22"/>
+  <circle cx="142" cy="142" r="19" fill="#FFFFFF"/>
 </svg>
