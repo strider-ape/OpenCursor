@@ -7,20 +7,15 @@
       <stop offset="1" stop-color="#E0457B"/>
     </linearGradient>
   </defs>
-
-  <!-- Rounded-square tile -->
   <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-
   <!-- Path from the thumb pad up to the cursor -->
-  <path d="M352 360 Q 300 250 196 196" fill="none" stroke="#FFFFFF" stroke-opacity="0.55"
-        stroke-width="14" stroke-linecap="round" stroke-dasharray="2 30"/>
-
-  <!-- Thumb pad (bottom right) -->
-  <circle cx="360" cy="372" r="62" fill="#FFFFFF" fill-opacity="0.28"/>
-  <circle cx="360" cy="372" r="62" fill="none" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="8"/>
-
+  <path d="M258 330 Q 176 316 164 250" fill="none" stroke="#FFFFFF" stroke-opacity="0.7"
+        stroke-width="22" stroke-linecap="round" stroke-dasharray="2 34"/>
+  <!-- Big thumb pad (bottom right) -->
+  <circle cx="346" cy="352" r="98" fill="#FFFFFF" fill-opacity="0.26"/>
+  <circle cx="346" cy="352" r="98" fill="none" stroke="#FFFFFF" stroke-opacity="0.75" stroke-width="10"/>
   <!-- Cursor (top left): ring with a centre dot -->
-  <circle cx="176" cy="176" r="74" fill="#1C1B22" fill-opacity="0.12"/>
-  <circle cx="176" cy="176" r="74" fill="none" stroke="#FFFFFF" stroke-width="22"/>
-  <circle cx="176" cy="176" r="20" fill="#FFFFFF"/>
+  <circle cx="162" cy="162" r="70" fill="#1C1B22" fill-opacity="0.14"/>
+  <circle cx="162" cy="162" r="70" fill="none" stroke="#FFFFFF" stroke-width="22"/>
+  <circle cx="162" cy="162" r="19" fill="#FFFFFF"/>
 </svg>
