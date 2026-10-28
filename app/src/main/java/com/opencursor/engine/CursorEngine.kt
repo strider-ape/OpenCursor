@@ -27,6 +27,7 @@ import com.opencursor.overlay.Overlays
 import com.opencursor.overlay.PieMenu
 import com.opencursor.overlay.TrackerView
 import com.opencursor.overlay.TriggerZoneView
+import com.opencursor.overlay.VolumeSlider
 import com.opencursor.settings.Settings
 
 /**
@@ -207,8 +208,9 @@ class CursorEngine(private val service: AccessibilityService) :
         val m = mapper ?: return
         val cursor = m.map(cx, cy)
         volumeBar?.let {
-            it.update(cursor.x)
-            canvas?.volumeLevel = it.fraction
+            // Unclamped, so the ends stay reachable when the cursor meets a screen edge.
+            if (it.update(m.unclamped.x) && settings.vibrateOnCursorAction) haptics.lightTick()
+            canvas?.volumeLevel = it.position
             return
         }
         canvas?.showCursor(cursor.x, cursor.y)
@@ -243,12 +245,14 @@ class CursorEngine(private val service: AccessibilityService) :
     /** Finger lifted after dragging: run a highlighted edge action, otherwise start the idle timer. */
     /** Edge "volume bar": the cursor turns into a slider until the finger lifts. */
     private fun startVolumeBar() {
-        val x = mapper?.cursor?.x ?: return
+        val m = mapper ?: return
         handler.removeCallbacks(fireEdgeRunnable)
         armedEdge = null
         canvas?.showEdge(null)
         canvas?.hideCursor()
-        volumeBar = VolumeBar(service, x, screen.x).also { canvas?.volumeLevel = it.fraction }
+        canvas?.volumeCenterX = VolumeSlider.clampCenter(service, m.cursor.x, screen.x)
+        volumeBar = VolumeBar(service, m.unclamped.x, VolumeSlider.trackWidthPx(service))
+            .also { canvas?.volumeLevel = it.position }
         vibrate()
     }
 

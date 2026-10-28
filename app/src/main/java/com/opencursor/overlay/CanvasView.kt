@@ -60,6 +60,9 @@ class CanvasView(context: Context) : View(context) {
 
     /** Volume level (0..1) while the edge volume bar is active; null hides it. */
     var volumeLevel: Float? = null
+
+    /** Where the volume card is centred, in screen x. */
+    var volumeCenterX = 0f
         set(value) {
             field = value
             invalidate()
@@ -147,7 +150,7 @@ class CanvasView(context: Context) : View(context) {
         }
 
         edgeHit?.let { drawEdge(canvas, it, ox, oy) }
-        volumeLevel?.let { volumeSlider.draw(canvas, it, screenWidth / 2f - ox, screenHeight * 0.08f - oy, screenWidth) }
+        volumeLevel?.let { volumeSlider.draw(canvas, it, volumeCenterX - ox, screenHeight * 0.08f - oy) }
 
         if (!cursorVisible) return
         val cx = cursorX - ox
