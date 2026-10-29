@@ -22,7 +22,9 @@ class CursorService : AccessibilityService() {
         engine?.onScreenChanged()
     }
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        engine?.onWindowChanged()
+    }
 
     override fun onInterrupt() = Unit
 

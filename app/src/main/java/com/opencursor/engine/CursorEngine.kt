@@ -96,14 +96,36 @@ class CursorEngine(private val service: AccessibilityService) :
     /** Triggers only exist while the screen is on and unlocked (SPEC.md §4 states). */
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_SCREEN_OFF -> userPresent = false
+                Intent.ACTION_USER_PRESENT -> userPresent = true
+            }
             if (canvas != null) applySettings()
         }
     }
 
+    /**
+     * Set by the unlock broadcast. It can arrive while the unlock animation still reports
+     * the keyguard as locked, so it is trusted on its own; cleared when the screen turns off.
+     */
+    private var userPresent = !service.getSystemService(KeyguardManager::class.java).isKeyguardLocked
+
     private fun screenUsable(): Boolean {
         val power = service.getSystemService(PowerManager::class.java)
         val keyguard = service.getSystemService(KeyguardManager::class.java)
-        return power.isInteractive && !keyguard.isKeyguardLocked
+        return power.isInteractive && (userPresent || !keyguard.isKeyguardLocked)
+    }
+
+    /**
+     * Self-heal, called on every window change: if the triggers should be showing but
+     * aren't (say an unlock signal was missed), put them back.
+     */
+    fun onWindowChanged() {
+        if (canvas == null || triggers.isNotEmpty()) return
+        if (!settings.leftTrigger && !settings.rightTrigger) return
+        if (!screenUsable()) return
+        updateScreen()
+        addTriggers()
     }
 
     /** Rebuilds everything that depends on settings or screen size. */
