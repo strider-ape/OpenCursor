@@ -25,6 +25,7 @@ import com.opencursor.input.TriggerLayout
 import com.opencursor.overlay.CanvasView
 import com.opencursor.overlay.Overlays
 import com.opencursor.overlay.PieMenu
+import com.opencursor.overlay.PreviewScene
 import com.opencursor.overlay.TrackerView
 import com.opencursor.overlay.TriggerZoneView
 import com.opencursor.settings.Settings
@@ -64,6 +65,7 @@ class CursorEngine(private val service: AccessibilityService) :
     private var injecting = false
 
     private val hideRunnable = Runnable { endSession() }
+    private val clearPreviewRunnable = Runnable { canvas?.preview = null }
     private val fireEdgeRunnable = Runnable { fireEdgeAction() }
 
     /** Held as a field: SharedPreferences only keeps weak references to listeners. */
@@ -81,6 +83,7 @@ class CursorEngine(private val service: AccessibilityService) :
         }
         applySettings()
         settings.prefs.registerOnSharedPreferenceChangeListener(settingsListener)
+        LivePreview.sink = { p -> handler.post { showPreview(p) } }
         ContextCompat.registerReceiver(
             service,
             screenReceiver,
@@ -154,6 +157,8 @@ class CursorEngine(private val service: AccessibilityService) :
         } catch (_: IllegalArgumentException) {
         }
         settings.prefs.unregisterOnSharedPreferenceChangeListener(settingsListener)
+        LivePreview.sink = null
+        handler.removeCallbacks(clearPreviewRunnable)
         handler.removeCallbacks(applySettingsRunnable)
         endSession()
         removeTriggers()
@@ -331,6 +336,34 @@ class CursorEngine(private val service: AccessibilityService) :
 
     private fun TriggerLayout.Box.toRectF() = RectF(left, top, right, bottom)
 
+    /** Draws what a settings slider means, then fades it out shortly after the last change. */
+    private fun showPreview(p: Preview) {
+        val c = canvas ?: return
+        c.preview = when (p) {
+            is Preview.Layout -> {
+                if ((screen.x < screen.y) != p.portrait) {
+                    PreviewScene.Note("Turn the phone to ${if (p.portrait) "portrait" else "landscape"} to preview this")
+                } else {
+                    val sides = buildList {
+                        if (p.left) add(TriggerLayout.Side.LEFT)
+                        if (p.right) add(TriggerLayout.Side.RIGHT)
+                    }
+                    PreviewScene.Layout(
+                        TriggerLayout.zones(
+                            sides, screen.x, screen.y, p.levels,
+                            Overlays.dp(service, p.thicknessDp).toInt().toFloat(), Overlays.dp(service, 200f),
+                        ),
+                    )
+                }
+            }
+            is Preview.CursorSize -> PreviewScene.Cursor(Overlays.dp(service, p.dp))
+            is Preview.PadSize -> PreviewScene.Pad(Overlays.dp(service, p.dp))
+            is Preview.EdgePush -> PreviewScene.EdgePush(Overlays.dp(service, p.dp))
+        }
+        handler.removeCallbacks(clearPreviewRunnable)
+        handler.postDelayed(clearPreviewRunnable, PREVIEW_LINGER_MS)
+    }
+
     /**
      * Always asks the window manager to drop the view: a window added just before the
      * screen locked may not report attached yet, and skipping it left an orphaned pad.
@@ -421,6 +454,9 @@ class CursorEngine(private val service: AccessibilityService) :
 
     private companion object {
         const val SETTINGS_SETTLE_MS = 150L
+
+        /** How long a slider preview stays after the last change. */
+        const val PREVIEW_LINGER_MS = 1200L
 
         /** Long enough for the slowest injected gesture (a 500 ms pinch). */
         const val GESTURE_SETTLE_MS = 600L

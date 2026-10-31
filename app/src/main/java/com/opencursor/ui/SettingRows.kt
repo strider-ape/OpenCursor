@@ -68,6 +68,8 @@ fun SliderRow(
     step: Float,
     format: (Float) -> String,
     description: String? = null,
+    /** Called continuously while dragging, e.g. to show a live preview. */
+    onLive: ((Float) -> Unit)? = null,
     onChange: (Float) -> Unit,
 ) {
     var current by remember(value) { mutableFloatStateOf(value) }
@@ -80,7 +82,10 @@ fun SliderRow(
         Description(description)
         Slider(
             value = current,
-            onValueChange = { current = it },
+            onValueChange = {
+                current = it
+                onLive?.invoke(it)
+            },
             onValueChangeFinished = { onChange(current) },
             valueRange = range,
             steps = steps.coerceAtLeast(0),

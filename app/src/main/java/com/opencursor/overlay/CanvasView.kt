@@ -56,6 +56,15 @@ class CanvasView(context: Context) : View(context) {
     private val labelInset = Overlays.dp(context, 28f)
     private var edgeHit: EdgeActionResolver.Hit? = null
 
+    private val previewPainter = PreviewPainter(context)
+
+    /** Temporary settings-slider preview; null when none. */
+    var preview: PreviewScene? = null
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     private val volumeSlider = VolumeSlider(context)
 
     /** Volume level (0..1) while the edge volume bar is active; null hides it. */
@@ -146,6 +155,7 @@ class CanvasView(context: Context) : View(context) {
             canvas.drawCircle(rippleX - ox, rippleY - oy, rippleMaxRadius * rippleProgress, ripple)
         }
 
+        preview?.let { previewPainter.draw(canvas, it, ox, oy, screenWidth, screenHeight) }
         edgeHit?.let { drawEdge(canvas, it, ox, oy) }
         volumeLevel?.let { volumeSlider.draw(canvas, it, screenWidth / 2f - ox, screenHeight * 0.08f - oy, screenWidth) }
 

@@ -43,6 +43,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.opencursor.Defaults
+import com.opencursor.engine.LivePreview
+import com.opencursor.engine.Preview
+import com.opencursor.input.TriggerLayout
 import com.opencursor.R
 import com.opencursor.settings.QuickCursorImport
 import com.opencursor.settings.Settings
@@ -153,6 +156,7 @@ private fun ColumnScope.TriggersPage(s: Settings, portrait: Boolean, setPortrait
         SliderRow(
             "Thickness", s.triggerWidthDp, 8f..48f, 2f, { "${it.roundToInt()} dp" },
             "How wide the invisible swipe strip is. Wider is easier to hit but can get in the way of apps' own edge swipes.",
+            onLive = { previewLayout(s, portrait, it) },
         ) { save { triggerWidthDp = it } }
     }
     SettingsSection {
@@ -165,10 +169,12 @@ private fun ColumnScope.TriggersPage(s: Settings, portrait: Boolean, setPortrait
             } else {
                 "Where the strips sit. 5–10 puts them on the bottom edge, moving out toward the corners. 0–4 moves them to the side edges."
             },
+            onLive = { v -> previewLayout(s, portrait) { it.copy(position = v.roundToInt()) } },
         ) { save { levels.position = it.roundToInt() } }
         SliderRow(
             "Length", levels.length.toFloat(), 0f..10f, 1f, { lengthLabel(it) },
             "How long the strips are. Longer strips are easier to find with your thumb.",
+            onLive = { v -> previewLayout(s, portrait) { it.copy(length = v.roundToInt()) } },
         ) { save { levels.length = it.roundToInt() } }
     }
 }
@@ -181,18 +187,22 @@ private fun ColumnScope.MovementPage(s: Settings, portrait: Boolean, setPortrait
         SliderRow(
             "Cursor speed", levels.speed.toFloat(), 0f..11f, 1f, ::speedLabel,
             "How far the cursor travels for each bit of thumb movement. At 2.66×, moving your thumb 1 cm moves the cursor 2.66 cm.",
+            onLive = { v -> previewLayout(s, portrait) { it.copy(speedFactor = speedOf(v)) } },
         ) { save { levels.speed = it.roundToInt() } }
         SliderRow(
             "Cursor reach", levels.cursorArea.toFloat(), 0f..7f, 1f, { "top ${it.roundToInt() + 1}/8 of screen" },
             "How much of the screen the cursor covers, counted from the top. Your thumb reaches the bottom part directly, so half is usually enough.",
+            onLive = { v -> previewLayout(s, portrait) { it.copy(cursorArea = v.roundToInt()) } },
         ) { save { levels.cursorArea = it.roundToInt() } }
         SliderRow(
             "Thumb area position", levels.trackerAlign.toFloat(), 0f..6f, 1f, { "${it.roundToInt()} of 6" },
             "Slides the area your thumb works in along the trigger strip: 0 = toward its start, 6 = toward its end.",
+            onLive = { v -> previewLayout(s, portrait) { it.copy(trackerAlign = v.roundToInt()) } },
         ) { save { levels.trackerAlign = it.roundToInt() } }
         SliderRow(
             "Thumb area distance", levels.trackerDistance.toFloat(), 0f..10f, 1f, { "${it.roundToInt()}" },
             "How far in from the screen edge your thumb works. Higher values keep your thumb away from the edge.",
+            onLive = { v -> previewLayout(s, portrait) { it.copy(trackerDistance = v.roundToInt()) } },
         ) { save { levels.trackerDistance = it.roundToInt() } }
     }
 }
@@ -200,7 +210,7 @@ private fun ColumnScope.MovementPage(s: Settings, portrait: Boolean, setPortrait
 @Composable
 private fun ColumnScope.CursorPage(s: Settings, save: Save) {
     SettingsSection {
-        SliderRow("Cursor size", s.cursorSizeDp, 20f..80f, 2f, { "${it.roundToInt()} dp" }, "Diameter of the round cursor.") {
+        SliderRow("Cursor size", s.cursorSizeDp, 20f..80f, 2f, { "${it.roundToInt()} dp" }, "Diameter of the round cursor.", onLive = { LivePreview.show(Preview.CursorSize(it)) }) {
             save { cursorSizeDp = it }
         }
     }
@@ -209,7 +219,7 @@ private fun ColumnScope.CursorPage(s: Settings, save: Save) {
 @Composable
 private fun ColumnScope.TrackerPage(s: Settings, save: Save) {
     SettingsSection {
-        SliderRow("Pad size", s.trackerSizeDp, 60f..160f, 5f, { "${it.roundToInt()} dp" }, "Size of the round pad that appears under your thumb.") {
+        SliderRow("Pad size", s.trackerSizeDp, 60f..160f, 5f, { "${it.roundToInt()} dp" }, "Size of the round pad that appears under your thumb.", onLive = { LivePreview.show(Preview.PadSize(it)) }) {
             save { trackerSizeDp = it }
         }
         SliderRow(
@@ -267,6 +277,7 @@ private fun ColumnScope.EdgesPage(s: Settings, save: Save) {
         SliderRow(
             "Push distance", s.edgeThresholdDp, 10f..80f, 5f, { "${it.roundToInt()} dp" },
             "How far past the edge the cursor must be pushed before the action lights up.",
+            onLive = { LivePreview.show(Preview.EdgePush(it)) },
         ) { save { edgeThresholdDp = it } }
         SliderRow(
             "Hold time", s.edgeDelayMs.toFloat(), 0f..1500f, 100f, { "${it.roundToInt()} ms" },
@@ -373,3 +384,16 @@ private fun positionLabel(level: Float, portrait: Boolean): String {
     val side = if (portrait) n >= 5 else n < 5
     return "$n · ${if (side) "side edges" else "bottom edge"}"
 }
+
+/** Shows the trigger/thumb/cursor layout for [portrait] with one value changed by [edit]. */
+private fun previewLayout(
+    s: Settings,
+    portrait: Boolean,
+    thicknessDp: Float = s.triggerWidthDp,
+    edit: (TriggerLayout.Levels) -> TriggerLayout.Levels = { it },
+) {
+    val base = (if (portrait) s.portrait else s.landscape).toLayout()
+    LivePreview.show(Preview.Layout(edit(base), portrait, thicknessDp, s.leftTrigger, s.rightTrigger))
+}
+
+private fun speedOf(level: Float) = Defaults.SPEED_FACTORS[level.roundToInt().coerceIn(0, Defaults.SPEED_FACTORS.lastIndex)]
